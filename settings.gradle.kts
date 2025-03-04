@@ -21,4 +21,6 @@ dependencyResolutionManagement {
 
 rootProject.name = "My Application"
 include(":app")
- 
+
+include(":flutter")
+project(":flutter").projectDir = file("flutter")
