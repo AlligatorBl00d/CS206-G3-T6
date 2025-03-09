@@ -38,7 +38,7 @@ jobs:
         run: ./gradlew connectedAndroidTest
 
       - name: Upload APK to Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-app
           path: app/build/outputs/apk/release/app-release.apk
