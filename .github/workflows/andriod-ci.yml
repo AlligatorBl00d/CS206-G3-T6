@@ -1,0 +1,57 @@
+name: Android CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Gradle Cache
+        uses: gradle/gradle-build-action@v2
+
+      - name: Grant Execute Permission to Gradlew
+        run: chmod +x gradlew
+
+      - name: Build APK
+        run: ./gradlew assembleRelease
+
+      - name: Run Unit Tests
+        run: ./gradlew test
+
+      - name: Run UI Tests (Optional)
+        run: ./gradlew connectedAndroidTest
+
+      - name: Upload APK to Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-app
+          path: app/build/outputs/apk/release/app-release.apk
+  deploy_firebase:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Firebase CLI
+        run: curl -sL https://firebase.tools | bash
+
+      - name: Deploy Firebase Functions
+        run: firebase deploy --only functions --token ${{ secrets.FIREBASE_TOKEN }}
