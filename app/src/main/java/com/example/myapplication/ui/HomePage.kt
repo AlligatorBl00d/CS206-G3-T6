@@ -26,7 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 
-// Define Data Model for List Items
 data class Item(val title: String, val subtitle: String)
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,6 +37,8 @@ fun HomeScreen() {
         Item("Freezer", "8 items total"),
         Item("Pantry", "12 items total")
     )
+
+    var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -54,6 +55,9 @@ fun HomeScreen() {
                     }
                 }
             )
+        },
+        bottomBar = {
+            BottomNavigationBar(selectedTab, onTabSelected = { selectedTab = it })
         }
     ) { innerPadding ->
         Column(
@@ -70,6 +74,48 @@ fun HomeScreen() {
         }
     }
 }
+
+@Composable
+fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+    NavigationBar(containerColor = Color.White) {
+        val items = listOf("Home", "Scan", "Expiring", "Stomach")
+        val icons = listOf(
+            R.drawable.home_icon,
+            R.drawable.scan_icon,
+            R.drawable.expiring_icon,
+            R.drawable.stomach_icon
+        )
+
+        items.forEachIndexed { index, label ->
+            NavigationBarItem(
+                selected = selectedTab == index,
+                onClick = { onTabSelected(index) },
+                icon = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Image(
+                            painter = painterResource(id = icons[index]),
+                            contentDescription = label,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = label,
+                            fontSize = 12.sp,
+                            color = if (selectedTab == index) Color.Black else Color.Gray // 👈 Fix text color
+                        )
+                    }
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Black,      // 👈 Fix icon color when selected
+                    unselectedIconColor = Color.Gray,     // 👈 Fix icon color when not selected
+                    selectedTextColor = Color.Black,      // 👈 Fix text color when selected
+                    unselectedTextColor = Color.Gray,     // 👈 Fix text color when not selected
+                    indicatorColor = Color.Transparent    // 👈 Removes default grey highlight effect
+                )
+            )
+        }
+    }
+}
+
 @Composable
 fun SearchBar() {
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
@@ -83,7 +129,7 @@ fun SearchBar() {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Default.Search, // Using Built-in Material Icon
+                imageVector = Icons.Default.Search,
                 contentDescription = "Search",
                 tint = Color.Gray,
                 modifier = Modifier.padding(end = 8.dp)
@@ -104,8 +150,8 @@ fun SearchBar() {
 fun ListItem(item: Item) {
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
+            .fillMaxWidth(1f) // ⬅️ Reduce width to 90% instead of full width
+            .padding(horizontal = 16.dp, vertical = 8.dp) // ⬅️ Add horizontal padding
             .clickable { /* TODO: Handle item click */ },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(4.dp)
@@ -125,7 +171,7 @@ fun ListItem(item: Item) {
                 contentDescription = item.title,
                 modifier = Modifier
                     .size(50.dp)
-                    .padding(8.dp)
+                    .padding(6.dp)
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = item.title, fontSize = 18.sp)
@@ -139,8 +185,6 @@ fun ListItem(item: Item) {
         }
     }
 }
-
-
 
 @Preview(showBackground = true)
 @Composable
