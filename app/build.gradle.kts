@@ -62,6 +62,8 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
      implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx") // for cloud messaging notifications 
+    implementation("com.google.firebase:firebase-messaging-ktx") // for cloud messaging notifications
+    // front end stuff
+    implementation("androidx.navigation:navigation-compose:2.7.3")
 
 }
