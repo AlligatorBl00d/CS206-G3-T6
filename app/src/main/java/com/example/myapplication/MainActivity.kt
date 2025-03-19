@@ -1,127 +1,95 @@
 package com.example.myapplication
 
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.ImageDecoder
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.util.Log
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.myapplication.ui.theme.MyApplicationTheme
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 
-//class MainActivity : ComponentActivity() {
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        enableEdgeToEdge()
-//        setContent {
-//            MyApplicationTheme {
-//                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-//                    Greeting(
-//                        name = "Android",
-//                        modifier = Modifier.padding(innerPadding)
-//                    )
-//                }
-//            }
-//        }
-//    }
-//}
-//
-//@Composable
-//fun Greeting(name: String, modifier: Modifier = Modifier) {
-//    Text(
-//        text = "Hello $name!",
-//        modifier = modifier
-//    )
-//}
-//
-//@Preview(showBackground = true)
-//@Composable
-//fun GreetingPreview() {
-//    MyApplicationTheme {
-//        Greeting("Android")
-//    }
-//}
+class MainActivity : AppCompatActivity() {
 
-class MainActivity : ComponentActivity() {
+    private lateinit var imageView: ImageView
+    private lateinit var textView: TextView
+    private lateinit var btnGallery: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            MyApplicationTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+        setContentView(R.layout.activity_main)
+
+        btnGallery = findViewById(R.id.btnGallery)
+        imageView = findViewById(R.id.imageView)
+        textView = findViewById(R.id.textView)
+
+        // Open Gallery
+        btnGallery.setOnClickListener {
+            openGallery()
+        }
+    }
+
+    // Launch gallery to select an image
+    private fun openGallery() {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+        galleryLauncher.launch(intent)
+    }
+
+    // Handle gallery selection
+    private val galleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val imageUri: Uri? = result.data?.data
+            imageUri?.let {
+                imageView.setImageURI(it) // Display selected image
+                recognizeTextFromUri(it) // Process OCR
             }
         }
-
-        // 🔥 Run Firebase Tests
-        testFirestore()
-        testAuth()
-        testFCM()
     }
 
-    // 📌 Firestore Test
-    private fun testFirestore() {
-        val db = FirebaseFirestore.getInstance()
-        val testData = hashMapOf("key" to "Hello Firebase!")
+    // Convert URI to Bitmap and Process OCR
+    private fun recognizeTextFromUri(imageUri: Uri) {
+        try {
+            val bitmap = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val source = ImageDecoder.createSource(contentResolver, imageUri)
+                ImageDecoder.decodeBitmap(source)
+            } else {
+                MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+            }
 
-        db.collection("testCollection").document("testDoc")
-            .set(testData)
-            .addOnSuccessListener { Log.d("FirebaseTest", "Data successfully written!") }
-            .addOnFailureListener { e -> Log.w("FirebaseTest", "Error writing document", e) }
+            recognizeText(bitmap)
+        } catch (e: Exception) {
+            Log.e("OCR", "Error loading image: ${e.message}")
+        }
     }
 
-    // 📌 Firebase Authentication Test
-    private fun testAuth() {
-        val auth = FirebaseAuth.getInstance()
+    // ML Kit OCR Processing
+    private fun recognizeText(bitmap: Bitmap) {
+        val image = InputImage.fromBitmap(bitmap, 0)
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-        auth.createUserWithEmailAndPassword("testuser@email.com", "testpassword123")
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Log.d("FirebaseAuth", "User created: ${task.result?.user?.uid}")
+        recognizer.process(image)
+            .addOnSuccessListener { result: Text ->
+                val extractedText = result.text
+                if (!extractedText.isNullOrEmpty()) {
+                    textView.text = extractedText
+                    Log.d("OCR", "Extracted Text: $extractedText")
                 } else {
-                    Log.e("FirebaseAuth", "Error: ${task.exception?.message}")
+                    textView.text = "No text found in image"
+                    Log.d("OCR", "No text detected.")
                 }
             }
-    }
-
-    // 📌 Firebase Cloud Messaging (FCM) Test
-    private fun testFCM() {
-        FirebaseMessaging.getInstance().token
-            .addOnCompleteListener { task ->
-                if (!task.isSuccessful) {
-                    Log.w("FCM", "Fetching FCM token failed", task.exception)
-                    return@addOnCompleteListener
-                }
-                val token = task.result
-                Log.d("FCM", "FCM Token: $token")
+            .addOnFailureListener { e ->
+                Log.e("OCR", "ML Kit OCR Error", e)
             }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MyApplicationTheme {
-        Greeting("Android")
     }
 }
