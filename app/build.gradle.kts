@@ -41,37 +41,42 @@ android {
 }
 
 dependencies {
-    // AndroidX Core
+    // 🔹 **AndroidX Core**
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // Jetpack Compose Core UI
+    // 🔹 **Jetpack Compose Core UI**
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui-util")
     implementation("androidx.compose.ui:ui-text")
 
-    // Material 3 Components
+    // 🔹 **Material 3 Components**
     implementation("androidx.compose.material3:material3")
 
-    // Firebase BoM (Bill of Materials)
+    // 🔹 **Jetpack Compose Extensions**
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0")
+
+    // 🔹 **Navigation**
+    implementation("androidx.navigation:navigation-compose:2.7.3") // Latest stable
+
+    // 🔹 **Firebase BoM (Bill of Materials)**
     implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx") // Cloud Messaging
 
-    // Jetpack Compose Extensions
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0")
+    // 🔹 **ML Kit (Text Recognition)**
+    implementation("com.google.mlkit:text-recognition:16.0.0")
 
-    // Unit (dp, sp, etc.)
-    implementation("androidx.compose.ui:ui-unit")
-    implementation("androidx.navigation:navigation-compose:2.5.3")
+    // 🔹 **Coil (Image Loading)**
+    implementation("io.coil-kt:coil-compose:2.2.2")
 
-    // Testing Dependencies
+    // 🔹 **Testing Dependencies**
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -79,14 +84,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    //import firebase BoM bill of materials 
-    implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
-    implementation("com.google.firebase:firebase-analytics-ktx")
-     implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx") // for cloud messaging notifications
-    // front end stuff
-    implementation("androidx.navigation:navigation-compose:2.7.3")
-
-    implementation("androidx.navigation:navigation-compose:2.5.3")
 }
