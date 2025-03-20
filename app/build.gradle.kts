@@ -65,5 +65,32 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx") // for cloud messaging notifications
     // front end stuff
     implementation("androidx.navigation:navigation-compose:2.7.3")
+    // To recognize Latin script
+    implementation (libs.text.recognition)
+    implementation (libs.text.recognition.v1600)
+
+    // CameraX Core
+    implementation("androidx.camera:camera-core:1.4.1")
+    implementation("androidx.camera:camera-lifecycle:1.4.1")
+    implementation("androidx.camera:camera-view:1.4.1")
+
+    // ML Kit Text Recognition (OCR)
+    implementation("com.google.mlkit:text-recognition:16.0.1")  // Latin-based scripts (English, etc.)
+
+    // Optional: If your app needs multilingual support, add specific language models
+    // implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
+    // implementation("com.google.mlkit:text-recognition-devanagari:16.0.0")
+    // implementation("com.google.mlkit:text-recognition-japanese:16.0.0")
+    // implementation("com.google.mlkit:text-recognition-korean:16.0.0")
+
+    // Coil for image loading in Jetpack Compose
+    implementation(libs.coil.compose)
+
+    // Lifecycle & ViewModel (if you need to manage states across recompositions)
+    implementation(libs.androidx.lifecycle.runtime.ktx.v262)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+
+    // Permissions for requesting camera access
+    implementation("com.google.accompanist:accompanist-permissions:0.31.1-alpha")
 
 }

@@ -9,5 +9,6 @@ fun AppNavigation(navController: NavHostController) {
     NavHost(navController = navController, startDestination = "home") {
         composable("home") { HomeScreen(navController) }
         composable("fridgePage") { FridgeScreen(navController) } // ✅ Ensure FridgeScreen is mapped
+        composable("receiptScanner") { ReceiptScannerScreen(navController) }
     }
 }
