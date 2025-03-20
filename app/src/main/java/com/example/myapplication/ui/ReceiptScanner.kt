@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,7 @@ fun ReceiptScannerScreen(navController: NavController) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = Color(0xFF6200EE))
             )
         }
     ) { innerPadding ->
@@ -65,8 +66,11 @@ fun ReceiptScannerScreen(navController: NavController) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(onClick = { imagePickerLauncher.launch("image/*") }) {
-                Text("Capture Receipt")
+            Button(
+                onClick = { imagePickerLauncher.launch("image/*") },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE)) // ✅ Button color updated
+            ) {
+                Text("Capture Receipt", color = Color.White) // Ensuring white text for contrast
             }
 
             Spacer(modifier = Modifier.height(16.dp))
