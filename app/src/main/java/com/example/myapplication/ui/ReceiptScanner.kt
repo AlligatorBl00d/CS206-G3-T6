@@ -30,15 +30,30 @@ fun ReceiptScannerScreen(navController: NavController) {
     val context = LocalContext.current
     val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var extractedText by remember { mutableStateOf("") }
 
+    // Launcher for picking an image from the gallery
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             capturedImageUri = it
             val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, it)
+            capturedBitmap = bitmap
             processImage(bitmap, recognizer) { text ->
+                extractedText = text
+            }
+        }
+    }
+
+    // Launcher for capturing an image using the camera
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap: Bitmap? ->
+        bitmap?.let {
+            capturedBitmap = it
+            processImage(it, recognizer) { text ->
                 extractedText = text
             }
         }
@@ -66,19 +81,39 @@ fun ReceiptScannerScreen(navController: NavController) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Button to pick an image from the gallery
             Button(
                 onClick = { imagePickerLauncher.launch("image/*") },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE)) // ✅ Button color updated
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6200EE))
             ) {
-                Text("Capture Receipt", color = Color.White) // Ensuring white text for contrast
+                Text("Select from Gallery", color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            capturedImageUri?.let {
+            // Button to take a picture with the camera
+            Button(
+                onClick = { cameraLauncher.launch(null) },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF03DAC5)) // Different color for camera button
+            ) {
+                Text("Capture with Camera", color = Color.White)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Display the selected/captured image
+            capturedBitmap?.let {
+                Image(
+                    bitmap = it.asImageBitmap(),
+                    contentDescription = "Captured Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                )
+            } ?: capturedImageUri?.let {
                 Image(
                     painter = rememberAsyncImagePainter(it),
-                    contentDescription = "Captured Image",
+                    contentDescription = "Selected Image",
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
@@ -93,6 +128,7 @@ fun ReceiptScannerScreen(navController: NavController) {
     }
 }
 
+// Function to process image using ML Kit OCR
 fun processImage(bitmap: Bitmap, recognizer: com.google.mlkit.vision.text.TextRecognizer, onTextExtracted: (String) -> Unit) {
     val image = InputImage.fromBitmap(bitmap, 0)
     recognizer.process(image)
