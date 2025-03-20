@@ -1,9 +1,12 @@
 package com.example.myapplication.ui
 
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -18,11 +21,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import java.io.File
+import java.io.IOException
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,7 +37,6 @@ fun ReceiptScannerScreen(navController: NavController) {
     val context = LocalContext.current
     val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
-    var capturedBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var extractedText by remember { mutableStateOf("") }
 
     // Launcher for picking an image from the gallery
@@ -39,25 +45,30 @@ fun ReceiptScannerScreen(navController: NavController) {
     ) { uri: Uri? ->
         uri?.let {
             capturedImageUri = it
-            val bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, it)
-            capturedBitmap = bitmap
-            processImage(bitmap, recognizer) { text ->
+            processImageUri(context, it, recognizer) { text ->
                 extractedText = text
             }
         }
     }
 
     // Launcher for capturing an image using the camera
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        bitmap?.let {
-            capturedBitmap = it
-            processImage(it, recognizer) { text ->
-                extractedText = text
-            }
+    val cameraLauncher = rememberCameraLauncher { uri ->
+        capturedImageUri = uri
+        processImageUri(context, uri, recognizer) { text ->
+            extractedText = text
         }
     }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted: Boolean ->
+            if (isGranted) {
+                cameraLauncher()
+            } else {
+                Toast.makeText(context, "Camera permission is required to capture images", Toast.LENGTH_SHORT).show()
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -93,8 +104,18 @@ fun ReceiptScannerScreen(navController: NavController) {
 
             // Button to take a picture with the camera
             Button(
-                onClick = { cameraLauncher.launch(null) },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF03DAC5)) // Different color for camera button
+                onClick = {
+                    if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.CAMERA)
+                        != android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ) {
+                        // Request Camera Permission
+                        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                    } else {
+                        // Permission already granted, launch camera
+                        cameraLauncher()
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF03DAC5))
             ) {
                 Text("Capture with Camera", color = Color.White)
             }
@@ -102,15 +123,7 @@ fun ReceiptScannerScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Display the selected/captured image
-            capturedBitmap?.let {
-                Image(
-                    bitmap = it.asImageBitmap(),
-                    contentDescription = "Captured Image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                )
-            } ?: capturedImageUri?.let {
+            capturedImageUri?.let {
                 Image(
                     painter = rememberAsyncImagePainter(it),
                     contentDescription = "Selected Image",
@@ -128,14 +141,48 @@ fun ReceiptScannerScreen(navController: NavController) {
     }
 }
 
-// Function to process image using ML Kit OCR
-fun processImage(bitmap: Bitmap, recognizer: com.google.mlkit.vision.text.TextRecognizer, onTextExtracted: (String) -> Unit) {
-    val image = InputImage.fromBitmap(bitmap, 0)
-    recognizer.process(image)
-        .addOnSuccessListener { visionText ->
-            onTextExtracted(visionText.text)
+// Function to process image URI using ML Kit OCR
+fun processImageUri(
+    context: Context,
+    uri: Uri,
+    recognizer: com.google.mlkit.vision.text.TextRecognizer,
+    onTextExtracted: (String) -> Unit
+) {
+    try {
+        val image = InputImage.fromFilePath(context, uri)
+        recognizer.process(image)
+            .addOnSuccessListener { visionText ->
+                onTextExtracted(visionText.text)
+            }
+            .addOnFailureListener { e ->
+                Log.e("OCR", "Text recognition failed", e)
+            }
+    } catch (e: IOException) {
+        Log.e("OCR", "Failed to load image from URI", e)
+    }
+}
+
+@Composable
+fun rememberCameraLauncher(
+    onImageCaptured: (Uri) -> Unit
+): () -> Unit {
+    val context = LocalContext.current
+    val tempImageUri = remember {
+        val file = File(
+            context.getExternalFilesDir(Environment.DIRECTORY_PICTURES),
+            "captured_receipt.jpg"
+        )
+        FileProvider.getUriForFile(context, "com.example.myapplication.provider", file)
+    }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture(),
+        onResult = { success ->
+            if (success) {
+                onImageCaptured(tempImageUri)
+            }
         }
-        .addOnFailureListener { e ->
-            Log.e("OCR", "Text recognition failed", e)
-        }
+    )
+
+    return { cameraLauncher.launch(tempImageUri) }
 }
