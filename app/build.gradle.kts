@@ -69,6 +69,7 @@ dependencies {
 
     // Unit (dp, sp, etc.)
     implementation("androidx.compose.ui:ui-unit")
+    implementation("androidx.navigation:navigation-compose:2.5.3")
 
     // Testing Dependencies
     testImplementation(libs.junit)
