@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,14 +36,13 @@ data class FoodItem(
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun FridgeScreen(navController: NavController) {
-    var selectedTab by remember { mutableStateOf(0) }  // Track selected tab
-
-    val foodItems = listOf(
+    var selectedTab by remember { mutableStateOf(0) } // Track selected tab
+    val foodItems = remember { mutableStateListOf( // ✅ Dynamic list
         FoodItem("Carrot", "x3", "0 days", "20/03/25", R.drawable.carrot_image),
         FoodItem("Apple", "x2", "2 days", "22/03/25", R.drawable.apple_image),
-        FoodItem("Noodle", "x3", "2 days", "22/03/25", R.drawable.noodles_image),
+        FoodItem("Grapes", "x3", "2 days", "22/03/25", R.drawable.noodles_image),
         FoodItem("Chicken", "x1", "4 days", "22/03/25", R.drawable.chicken_image)
-    )
+    ) }
 
     Scaffold(
         topBar = {
@@ -65,9 +65,7 @@ fun FridgeScreen(navController: NavController) {
         Column(modifier = Modifier.padding(innerPadding)) {
             // Filter Row
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 listOf("All", "Vegetables", "Fruits", "Meat").forEachIndexed { index, filter ->
@@ -82,7 +80,7 @@ fun FridgeScreen(navController: NavController) {
                     .padding(horizontal = 16.dp)
             ) {
                 foodItems.forEach { item ->
-                    FoodItemRow(item)
+                    FoodItemRow(item, onDelete = { foodItems.remove(item) }) // ✅ Pass delete function
                 }
             }
         }
@@ -104,14 +102,14 @@ fun FilterChip(text: String, selected: Boolean) {
 }
 
 @Composable
-fun FoodItemRow(item: FoodItem) {
+fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) { // ✅ Added delete function
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
-            .background(Color(0xFFEDEDED), shape = RoundedCornerShape(12.dp)), // ✅ Added grey background
+            .background(Color(0xFFEDEDED), shape = RoundedCornerShape(12.dp)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFEDEDED)) // ✅ Match grey background
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFEDEDED))
     ) {
         Row(
             modifier = Modifier
@@ -152,6 +150,15 @@ fun FoodItemRow(item: FoodItem) {
                     text = "Use by ${item.expiryDate}",
                     fontSize = 12.sp,
                     color = Color.Gray
+                )
+            }
+
+            // Delete Button
+            IconButton(onClick = { onDelete() }) { // ✅ Deletes the item
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.Red
                 )
             }
         }
