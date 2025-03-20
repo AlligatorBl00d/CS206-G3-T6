@@ -2,11 +2,11 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services") //firebase plugin 
+    id("com.google.gms.google-services") // Firebase plugin
 }
 
 android {
-    namespace = "com.example.myapplication" // i have ensured that this matches firebase
+    namespace = "com.example.myapplication" // Ensure this matches Firebase
     compileSdk = 35
 
     defaultConfig {
@@ -41,15 +41,37 @@ android {
 }
 
 dependencies {
-
+    // AndroidX Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Jetpack Compose Core UI
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.ui:ui-util")
+    implementation("androidx.compose.ui:ui-text")
+
+    // Material 3 Components
+    implementation("androidx.compose.material3:material3")
+
+    // Firebase BoM (Bill of Materials)
+    implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx") // Cloud Messaging
+
+    // Jetpack Compose Extensions
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.0")
+
+    // Unit (dp, sp, etc.)
+    implementation("androidx.compose.ui:ui-unit")
+    implementation("androidx.navigation:navigation-compose:2.5.3")
+
+    // Testing Dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -65,32 +87,6 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx") // for cloud messaging notifications
     // front end stuff
     implementation("androidx.navigation:navigation-compose:2.7.3")
-    // To recognize Latin script
-    implementation (libs.text.recognition)
-    implementation (libs.text.recognition.v1600)
 
-    // CameraX Core
-    implementation("androidx.camera:camera-core:1.4.1")
-    implementation("androidx.camera:camera-lifecycle:1.4.1")
-    implementation("androidx.camera:camera-view:1.4.1")
-
-    // ML Kit Text Recognition (OCR)
-    implementation("com.google.mlkit:text-recognition:16.0.1")  // Latin-based scripts (English, etc.)
-
-    // Optional: If your app needs multilingual support, add specific language models
-    // implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
-    // implementation("com.google.mlkit:text-recognition-devanagari:16.0.0")
-    // implementation("com.google.mlkit:text-recognition-japanese:16.0.0")
-    // implementation("com.google.mlkit:text-recognition-korean:16.0.0")
-
-    // Coil for image loading in Jetpack Compose
-    implementation(libs.coil.compose)
-
-    // Lifecycle & ViewModel (if you need to manage states across recompositions)
-    implementation(libs.androidx.lifecycle.runtime.ktx.v262)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    // Permissions for requesting camera access
-    implementation("com.google.accompanist:accompanist-permissions:0.31.1-alpha")
-
+    implementation("androidx.navigation:navigation-compose:2.5.3")
 }
