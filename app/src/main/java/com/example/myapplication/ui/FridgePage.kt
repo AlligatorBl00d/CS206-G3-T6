@@ -38,10 +38,10 @@ fun FridgeScreen(navController: NavController) {
     var selectedTab by remember { mutableStateOf(0) }  // Track selected tab
 
     val foodItems = listOf(
-        FoodItem("Carrot", "x3", "0 days", "20/03/25", R.drawable.fridge_image),
-        FoodItem("Apple", "x2", "2 days", "22/03/25", R.drawable.fridge_image),
-        FoodItem("Noodle", "x3", "2 days", "22/03/25", R.drawable.fridge_image),
-        FoodItem("Chicken", "x1", "4 days", "22/03/25", R.drawable.fridge_image)
+        FoodItem("Carrot", "x3", "0 days", "20/03/25", R.drawable.carrot_image),
+        FoodItem("Apple", "x2", "2 days", "22/03/25", R.drawable.apple_image),
+        FoodItem("Noodle", "x3", "2 days", "22/03/25", R.drawable.noodles_image),
+        FoodItem("Chicken", "x1", "4 days", "22/03/25", R.drawable.chicken_image)
     )
 
     Scaffold(
