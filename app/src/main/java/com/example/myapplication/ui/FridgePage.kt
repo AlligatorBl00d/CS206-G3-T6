@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,7 +39,7 @@ fun FridgeScreen(navController: NavController) {
     val foodItems = remember { mutableStateListOf( // ✅ Dynamic list
         FoodItem("Carrot", "x3", "0 days", "20/03/25", R.drawable.carrot_image),
         FoodItem("Apple", "x2", "2 days", "22/03/25", R.drawable.apple_image),
-        FoodItem("Grapes", "x3", "2 days", "22/03/25", R.drawable.noodles_image),
+        FoodItem("Grapes", "x3", "2 days", "22/03/25", R.drawable.grapes_image),
         FoodItem("Chicken", "x1", "4 days", "22/03/25", R.drawable.chicken_image)
     ) }
 
@@ -60,7 +59,9 @@ fun FridgeScreen(navController: NavController) {
                 colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = Color(0xFF6200EE))
             )
         },
-        bottomBar = { BottomNavigationBar(selectedTab = selectedTab, onTabSelected = { selectedTab = it }) }
+        bottomBar = {
+            BottomNavigationBar(navController, selectedTab, onTabSelected = { selectedTab = it }) // ✅ Fix here
+        }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
             // Filter Row

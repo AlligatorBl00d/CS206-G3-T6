@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.R
@@ -59,7 +60,7 @@ fun HomeScreen(navController: NavHostController) {
             )
         },
         bottomBar = {
-            BottomNavigationBar(selectedTab, onTabSelected = { selectedTab = it })
+            BottomNavigationBar(navController, selectedTab, onTabSelected = { selectedTab = it })
         }
     ) { innerPadding ->
         Column(
@@ -78,7 +79,7 @@ fun HomeScreen(navController: NavHostController) {
 }
 
 @Composable
-fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+fun BottomNavigationBar(navController: NavController, selectedTab: Int, onTabSelected: (Int) -> Unit) {
     NavigationBar(containerColor = Color.White) {
         val items = listOf("Home", "Scan", "Expiring", "Stomach")
         val icons = listOf(
@@ -91,7 +92,12 @@ fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
         items.forEachIndexed { index, label ->
             NavigationBarItem(
                 selected = selectedTab == index,
-                onClick = { onTabSelected(index) },
+                onClick = {
+                    onTabSelected(index)
+                    if (label == "Home") {
+                        navController.navigate("home") // ✅ Navigate to HomeScreen
+                    }
+                },
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Image(
@@ -102,22 +108,21 @@ fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
                         Text(
                             text = label,
                             fontSize = 12.sp,
-                            color = if (selectedTab == index) Color.Black else Color.Gray // 👈 Fix text color
+                            color = if (selectedTab == index) Color.Black else Color.Gray
                         )
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color.Black,      // 👈 Fix icon color when selected
-                    unselectedIconColor = Color.Gray,     // 👈 Fix icon color when not selected
-                    selectedTextColor = Color.Black,      // 👈 Fix text color when selected
-                    unselectedTextColor = Color.Gray,     // 👈 Fix text color when not selected
-                    indicatorColor = Color.Transparent    // 👈 Removes default grey highlight effect
+                    selectedIconColor = Color.Black,
+                    unselectedIconColor = Color.Gray,
+                    selectedTextColor = Color.Black,
+                    unselectedTextColor = Color.Gray,
+                    indicatorColor = Color.Transparent
                 )
             )
         }
     }
 }
-
 @Composable
 fun SearchBar() {
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
