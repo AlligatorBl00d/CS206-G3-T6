@@ -24,6 +24,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.R
 
 data class Item(val title: String, val subtitle: String)
@@ -31,7 +33,7 @@ data class Item(val title: String, val subtitle: String)
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun HomeScreen() {
+fun HomeScreen(navController: NavHostController) {
     val items = listOf(
         Item("Fridge", "5 items total"),
         Item("Freezer", "8 items total"),
@@ -68,7 +70,7 @@ fun HomeScreen() {
             SearchBar()
             LazyColumn {
                 items(items) { item ->
-                    ListItem(item)
+                    ListItem(item, navController)
                 }
             }
         }
@@ -147,12 +149,16 @@ fun SearchBar() {
 }
 
 @Composable
-fun ListItem(item: Item) {
+fun ListItem(item: Item, navController: NavHostController) {
     Card(
         modifier = Modifier
-            .fillMaxWidth(1f) // ⬅️ Reduce width to 90% instead of full width
-            .padding(horizontal = 16.dp, vertical = 8.dp) // ⬅️ Add horizontal padding
-            .clickable { /* TODO: Handle item click */ },
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable {
+                if (item.title == "Fridge") {
+                    navController.navigate("fridgePage") // ✅ Navigate to FridgePage
+                }
+            },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
@@ -163,10 +169,10 @@ fun ListItem(item: Item) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(id =
-                if (item.title == "Fridge") R.drawable.fridge_image
-                else if (item.title == "Freezer") R.drawable.snowflake
-                else R.drawable.pantry
+                painter = painterResource(
+                    id = if (item.title == "Fridge") R.drawable.fridge_image
+                    else if (item.title == "Freezer") R.drawable.snowflake
+                    else R.drawable.pantry
                 ),
                 contentDescription = item.title,
                 modifier = Modifier
@@ -189,5 +195,6 @@ fun ListItem(item: Item) {
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    HomeScreen()
+    val navController = rememberNavController() // ✅ Define NavController instance
+    HomeScreen(navController)
 }
