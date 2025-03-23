@@ -97,6 +97,10 @@ fun BottomNavigationBar(navController: NavController, selectedTab: Int, onTabSel
                     if (label == "Home") {
                         navController.navigate("home") // ✅ Navigate to HomeScreen
                     }
+
+                    if (label == "Scan") {
+                        navController.navigate("receiptScanner")
+                    }
                 },
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
