@@ -41,6 +41,7 @@ fun ExpiringPageScreen(navController: NavController) {
                 ExpiringItem("Apple", R.drawable.apple_image, 2, "2 days", "22/03/25"),
                 ExpiringItem("Grapes", R.drawable.grapes_image, 3, "2 days", "22/03/25"),
                 ExpiringItem("Chicken", R.drawable.chicken_image, 1, "4 days", "24/03/25"),
+                ExpiringItem("TestingScrolling", R.drawable.snowflake, 100, "400 days", "24/03/25"),
             )
         )
     }

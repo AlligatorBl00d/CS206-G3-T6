@@ -8,8 +8,7 @@ data class InventoryItem(
     val estimatedExpiryDate: String = "",
     val quantity: Int = 0,
     val storageLocation: String = "",
-    val imageUrl: String = "",
-    val daysLeft: Int = 0,
+    val imageUrl: String = ""
 ) {
-    constructor() : this("", "", "", "", "", 0, "", "", 0)
+    constructor() : this("", "", "", "", "", 0, "", "")
 }
