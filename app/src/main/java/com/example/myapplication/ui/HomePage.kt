@@ -101,6 +101,12 @@ fun BottomNavigationBar(navController: NavController, selectedTab: Int, onTabSel
                     if (label == "Scan") {
                         navController.navigate("receiptScanner")
                     }
+                    if (label == "Expiring") {
+                        navController.navigate("expiringPage")
+                    }
+                    if (label == "Stomach") {
+                        navController.navigate("stomachPage")
+                    }
                 },
                 icon = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {

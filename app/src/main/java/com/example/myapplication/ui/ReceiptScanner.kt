@@ -34,6 +34,7 @@ import java.io.IOException
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptScannerScreen(navController: NavController) {
+    var selectedTab by remember { mutableStateOf(0) } // Track selected tab
     val context = LocalContext.current
     val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -81,7 +82,11 @@ fun ReceiptScannerScreen(navController: NavController) {
                 },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = Color(0xFF6200EE))
             )
-        }
+        },
+                bottomBar = {
+            BottomNavigationBar(navController, selectedTab, onTabSelected = { selectedTab = it }) // ✅ Fix here
+        },
+
     ) { innerPadding ->
         Column(
             modifier = Modifier

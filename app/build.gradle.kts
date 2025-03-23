@@ -52,6 +52,9 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui-util")
     implementation("androidx.compose.ui:ui-text")
+    // In your app-level build.gradle (should already be there)
+    implementation ("androidx.core:core-ktx:1.10.1")
+    implementation ("androidx.compose.material:material-icons-extended:1.5.0")
 
     // 🔹 **Material 3 Components**
     implementation("androidx.compose.material3:material3")

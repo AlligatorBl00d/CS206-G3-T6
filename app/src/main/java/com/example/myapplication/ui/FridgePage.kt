@@ -40,7 +40,7 @@ fun FridgeScreen(navController: NavController) {
         FoodItem("Carrot", "x3", "0 days", "20/03/25", R.drawable.carrot_image),
         FoodItem("Apple", "x2", "2 days", "22/03/25", R.drawable.apple_image),
         FoodItem("Grapes", "x3", "2 days", "22/03/25", R.drawable.grapes_image),
-        FoodItem("Chicken", "x1", "4 days", "22/03/25", R.drawable.chicken_image)
+        FoodItem("Chicken", "x1", "4 days", "24/03/25", R.drawable.chicken_image)
     ) }
 
     Scaffold(
@@ -151,15 +151,6 @@ fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) { // ✅ Added delete func
                     text = "Use by ${item.expiryDate}",
                     fontSize = 12.sp,
                     color = Color.Gray
-                )
-            }
-
-            // Delete Button
-            IconButton(onClick = { onDelete() }) { // ✅ Deletes the item
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color.Red
                 )
             }
         }
