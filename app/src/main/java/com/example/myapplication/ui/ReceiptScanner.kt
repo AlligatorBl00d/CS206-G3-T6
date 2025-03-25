@@ -3,12 +3,14 @@ package com.example.myapplication.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -24,13 +26,19 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplication.utils.FsisUtils
+import com.example.myapplication.viewmodel.InventoryViewModel
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.example.myapplication.models.InventoryItem
 import java.io.File
 import java.io.IOException
 
+
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptScannerScreen(navController: NavController) {
@@ -39,6 +47,8 @@ fun ReceiptScannerScreen(navController: NavController) {
     val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     var extractedText by remember { mutableStateOf("") }
+    val viewModel: InventoryViewModel = viewModel()
+
 
     // Launcher for picking an image from the gallery
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -46,16 +56,17 @@ fun ReceiptScannerScreen(navController: NavController) {
     ) { uri: Uri? ->
         uri?.let {
             capturedImageUri = it
-            processImageUri(context, it, recognizer) { text ->
+            processImageUri(context, it, recognizer,viewModel) { text ->
                 extractedText = text
             }
         }
     }
 
+
     // Launcher for capturing an image using the camera
     val cameraLauncher = rememberCameraLauncher { uri ->
         capturedImageUri = uri
-        processImageUri(context, uri, recognizer) { text ->
+        processImageUri(context, uri, recognizer,viewModel) { text ->
             extractedText = text
         }
     }
@@ -147,10 +158,12 @@ fun ReceiptScannerScreen(navController: NavController) {
 }
 
 // Function to process image URI using ML Kit OCR
+@RequiresApi(Build.VERSION_CODES.O)
 fun processImageUri(
     context: Context,
     uri: Uri,
     recognizer: com.google.mlkit.vision.text.TextRecognizer,
+    viewModel: InventoryViewModel, // pass it in
     onTextExtracted: (String) -> Unit
 ) {
     try {
@@ -163,12 +176,35 @@ fun processImageUri(
                 val date = extractDate(rawText)
                 val items = extractItems(rawText)
 
+                val fsisData = FsisUtils.loadFsisData(context)
+
+                items.forEach { itemName ->
+                    val match = FsisUtils.findMatch(itemName, fsisData)
+                    val estimatedExpiry = match?.let {
+                        FsisUtils.estimateExpiryDate(it, "fridge") // or use dropdown from UI later
+                    } ?: ""
+
+                    val inventoryItem = InventoryItem(
+                        name = itemName,
+                        category = "Unknown",
+                        purchaseDate = extractDate(rawText),
+                        estimatedExpiryDate = estimatedExpiry,
+                        quantity = 1,
+                        storageLocation = "Fridge"
+                    )
+
+                    viewModel.addItem(inventoryItem, onSuccess = {}, onFailure = { e ->
+                        Log.e("Firestore", "Failed to add item: ${e.message}")
+                    })
+                }
+
                 // Build formatted display text
                 val formattedText = buildString {
                     appendLine("🗓️ Date of Purchase: $date")
                     appendLine("\n🛒 Items Bought:")
                     items.forEach { appendLine("- $it") }
                 }
+
 
                 // Send formatted text to UI
                 onTextExtracted(formattedText)
@@ -238,3 +274,4 @@ fun rememberCameraLauncher(
 
     return { cameraLauncher.launch(tempImageUri) }
 }
+

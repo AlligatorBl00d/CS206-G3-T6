@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.myapplication"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -79,6 +79,8 @@ dependencies {
     // 🔹 **Coil (Image Loading)**
     implementation("io.coil-kt:coil-compose:2.2.2")
 
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
     // 🔹 **Testing Dependencies**
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -87,4 +89,6 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+
 }
