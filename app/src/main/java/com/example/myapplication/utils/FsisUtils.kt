@@ -14,44 +14,21 @@ import java.time.format.DateTimeFormatter
 
 object FsisUtils {
     fun loadFsisData(context: Context): List<FsisFoodItem> {
-
-//        """Parses a nested JSON array structure (masterArray.getJSONArray(i))
-//
-//            Flattens each individual item’s key-value pairs into a Map<String, String?>
-//
-//            Extracts and processes the important fields (name, keywords, expiry durations)
-//
-//            Builds a List<FsisFoodItem> for easy searching
-//
-//            Provides a findMatch() utility that looks for a match by:
-//
-//            Checking if the food name contains the search string
-//
-//            OR if any of the keywords match the input """
-        val jsonString = context.assets.open("fsis_data.json").bufferedReader().use { it.readText() }
-        val masterArray = JSONArray(jsonString)
+        val jsonString = context.assets.open("clean_fsis_data.json").bufferedReader().use { it.readText() }
+        val jsonArray = JSONArray(jsonString)
         val items = mutableListOf<FsisFoodItem>()
 
-        for (i in 0 until masterArray.length()) {
-            val rawItemArray = masterArray.getJSONArray(i)
+        for (i in 0 until jsonArray.length()) {
+            val obj = jsonArray.getJSONObject(i)
 
-            val itemMap = mutableMapOf<String, String?>()
-
-            for (j in 0 until rawItemArray.length()) {
-                val fieldObject = rawItemArray.getJSONObject(j)
-                val key = fieldObject.keys().next()
-                val value = fieldObject.opt(key)?.toString()
-                itemMap[key] = value
-            }
-
-            val name = itemMap["Name"] ?: continue
-            val keywords = itemMap["Keywords"]?.split(",")?.map { it.trim() } ?: emptyList()
-            val refrigerateMin = itemMap["Refrigerate_Min"]?.toDoubleOrNull()?.toInt()
-            val refrigerateMax = itemMap["Refrigerate_Max"]?.toDoubleOrNull()?.toInt()
-            val refrigerateMetric = itemMap["Refrigerate_Metric"]
-            val freezeMin = itemMap["Freeze_Min"]?.toDoubleOrNull()?.toInt()
-            val freezeMax = itemMap["Freeze_Max"]?.toDoubleOrNull()?.toInt()
-            val freezeMetric = itemMap["Freeze_Metric"]
+            val name = obj.optString("name") ?: continue
+            val keywords = obj.optString("keywords")?.split(",")?.map { it.trim() } ?: emptyList()
+            val refrigerateMin = obj.optDouble("refrigeration_min", -1.0).takeIf { it >= 0 }?.toInt()
+            val refrigerateMax = obj.optDouble("refrigeration_max", -1.0).takeIf { it >= 0 }?.toInt()
+            val refrigerateMetric = obj.optString("refrigeration_unit")
+            val freezeMin = obj.optDouble("freezing_min", -1.0).takeIf { it >= 0 }?.toInt()
+            val freezeMax = obj.optDouble("freezing_max", -1.0).takeIf { it >= 0 }?.toInt()
+            val freezeMetric = obj.optString("freezing_unit")
 
             items.add(
                 FsisFoodItem(
@@ -69,6 +46,7 @@ object FsisUtils {
 
         return items
     }
+
 
     fun findMatch(name: String, data: List<FsisFoodItem>): FsisFoodItem? {
         val lowerName = name.lowercase()

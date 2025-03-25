@@ -25,14 +25,18 @@ object NotificationHelper {
             manager.createNotificationChannel(channel)
         }
 
-        val intent = Intent(context, MainActivity::class.java)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            putExtra("navigateTo", "expiringPage")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Food Expiry Alert")
-            .setContentText("$foodName is expiring in $daysLeft day(s)!")
+            .setContentText("Tap to view. Expiring Food.")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

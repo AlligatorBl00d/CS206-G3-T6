@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.callbackFlow
 
 class InventoryRepository {
     private val db = FirebaseFirestore.getInstance()
-    private val inventoryCollection = db.collection("inventory")  // Firestore collection
+    private val inventoryCollection = db.collection("inventoryItems")  // Firestore collection
 
     // 🔹 Add item to Firestore
     suspend fun addItem(item: InventoryItem): Boolean {
@@ -35,20 +35,27 @@ class InventoryRepository {
     fun getAllItems(): Flow<List<InventoryItem>> = callbackFlow {
         val listener = inventoryCollection.addSnapshotListener { snapshot, e ->
             if (e != null) {
-                Log.e("Firestore", "Error fetching inventory items", e)
-                trySend(emptyList()) // Emit empty list on error
+                Log.e("Firestore", "❌ Error fetching inventory items", e)
+                trySend(emptyList())
                 return@addSnapshotListener
             }
 
             snapshot?.let {
                 val items = it.toObjects(InventoryItem::class.java)
-                Log.d("FirestoreTest", "📦 Inventory Updated: $items")
-                trySend(items) // Send the latest list of items
+
+                // ✅ TEMPORARY LOGS FOR DEBUGGING
+                Log.d("ExpiryCheck", "📦 Inventory Snapshot Size: ${items.size}")
+                items.forEach { item ->
+                    Log.d("ExpiryCheck", "Item: ${item.name}, Expiry: ${item.estimatedExpiryDate}")
+                }
+
+                trySend(items)
             }
         }
 
-        awaitClose { listener.remove() } // Close listener when flow collection stops
+        awaitClose { listener.remove() }
     }
+
 
     // 🔹 Get all inventory items (One-time snapshot)
     suspend fun getAllItemsSnapshot(): QuerySnapshot {

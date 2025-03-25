@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
@@ -27,7 +28,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.myapplication.R
+import com.example.myapplication.workers.ExpiryCheckWorker
 
 data class Item(val title: String, val subtitle: String)
 
@@ -35,6 +39,12 @@ data class Item(val title: String, val subtitle: String)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HomeScreen(navController: NavHostController) {
+    //val context = LocalContext.current
+
+//    LaunchedEffect(Unit) {
+//        val request = OneTimeWorkRequestBuilder<ExpiryCheckWorker>().build()
+//        WorkManager.getInstance(context).enqueue(request)
+//    }
     val items = listOf(
         Item("Fridge", "5 items total"),
         Item("Freezer", "8 items total"),
