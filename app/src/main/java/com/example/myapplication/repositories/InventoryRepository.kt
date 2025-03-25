@@ -100,4 +100,12 @@ class InventoryRepository {
             false
         }
     }
+
+//    //get item based on storage location
+//    suspend fun getItemCountsByLocation(): Map<String, Int> {
+//        val snapshot = inventoryCollection.get().await()
+//        val items = snapshot.toObjects(InventoryItem::class.java)
+//        return items.groupingBy { it.storageLocation }.eachCount()
+//    }
+
 }
