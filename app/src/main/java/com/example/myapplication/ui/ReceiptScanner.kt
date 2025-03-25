@@ -157,7 +157,21 @@ fun processImageUri(
         val image = InputImage.fromFilePath(context, uri)
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                onTextExtracted(visionText.text)
+                val rawText = visionText.text
+
+                // Extract date and items
+                val date = extractDate(rawText)
+                val items = extractItems(rawText)
+
+                // Build formatted display text
+                val formattedText = buildString {
+                    appendLine("🗓️ Date of Purchase: $date")
+                    appendLine("\n🛒 Items Bought:")
+                    items.forEach { appendLine("- $it") }
+                }
+
+                // Send formatted text to UI
+                onTextExtracted(formattedText)
             }
             .addOnFailureListener { e ->
                 Log.e("OCR", "Text recognition failed", e)
@@ -166,6 +180,39 @@ fun processImageUri(
         Log.e("OCR", "Failed to load image from URI", e)
     }
 }
+
+// Extracts date from OCR text using regex
+fun extractDate(text: String): String {
+    val regex = Regex("""\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b""") // e.g., 12/03/2025
+    return regex.find(text)?.value ?: "Not found"
+}
+
+// Filters out total, payment, store info and keeps likely item lines
+fun extractItems(text: String): List<String> {
+    return text.lines()
+        .map { it.trim() }
+        .filter { line ->
+            val lower = line.lowercase()
+
+            val isLikelyMetadata = listOf(
+                "total", "visa", "payment", "cashier", "change", "ntuc",
+                "mall", "thank", "saved", "terminal", "transaction", "gst",
+                "selfserv", "amount", "price", "acct", "acnt", "card"
+            ).any { keyword -> lower.contains(keyword) }
+
+            val hasMaskedDigits = Regex("""x{4,}|[*]{4,}""").containsMatchIn(line.lowercase())
+            val isLongDigitLine = Regex("""\d{4,}""").containsMatchIn(line) && line.length < 25
+
+            val isAllCaps = line == line.uppercase() && line.any { it.isLetter() }
+
+            // Only return lines that look like valid item names
+            !isLikelyMetadata && !hasMaskedDigits && !isLongDigitLine && isAllCaps
+        }
+        .filter { it.length > 5 }
+}
+
+
+
 
 @Composable
 fun rememberCameraLauncher(
