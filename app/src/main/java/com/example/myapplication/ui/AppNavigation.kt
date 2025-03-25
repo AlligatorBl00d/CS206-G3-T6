@@ -8,6 +8,8 @@ import androidx.navigation.navArgument
 import com.example.foodinventory.ui.theme.ExpiringPageScreen
 import com.example.foodinventory.ui.theme.StomachScreen
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.example.myapplication.models.ScannedItem
 import java.net.URLDecoder
 
 
@@ -32,7 +34,8 @@ fun AppNavigation(navController: NavHostController) {
 
             // Decode URI and parse JSON
             val decodedJson = URLDecoder.decode(itemsJson, "UTF-8")
-            val itemsList = Gson().fromJson(decodedJson, Array<String>::class.java).toList()
+            val type = object : TypeToken<List<ScannedItem>>() {}.type
+            val itemsList: List<ScannedItem> = Gson().fromJson(decodedJson, type)
 
             ConfirmReceiptPage(navController, date, itemsList)
         }

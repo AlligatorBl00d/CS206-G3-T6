@@ -37,6 +37,7 @@ import com.example.myapplication.utils.FsisUtils
 import com.example.myapplication.viewmodel.InventoryViewModel
 import com.example.myapplication.models.InventoryItem
 import com.example.myapplication.viewmodel.InventoryViewModelFactory
+import com.example.myapplication.models.ScannedItem
 import java.io.File
 import java.io.IOException
 
@@ -134,14 +135,14 @@ fun ReceiptScannerScreen(navController: NavController) {
         // ✅ Process and upload to Firestore
         val fsisData = FsisUtils.loadFsisData(context)
 
-        items.forEach { itemName ->
-            val match = FsisUtils.findMatch(itemName, fsisData)
+        items.forEach { scannedItem ->
+            val match = FsisUtils.findMatch(scannedItem.name, fsisData)
             val estimatedExpiry = match?.let {
                 FsisUtils.estimateExpiryDate(it, "fridge")
             } ?: ""
 
             val inventoryItem = InventoryItem(
-                name = itemName,
+                name = scannedItem.name,
                 category = "Unknown",
                 purchaseDate = date,
                 estimatedExpiryDate = estimatedExpiry,
@@ -150,13 +151,13 @@ fun ReceiptScannerScreen(navController: NavController) {
             )
 
             viewModel.addItem(inventoryItem, onSuccess = {
-                Log.d("Firestore", "Added $itemName")
+                Log.d("Firestore", "Added $scannedItem")
             }, onFailure = { e ->
                 Log.e("Firestore", "Failed to add item: ${e.message}")
             })
         }
 
-        Toast.makeText(context, "Items added to inventory!", Toast.LENGTH_SHORT).show()
+        //Toast.makeText(context, "Items added to inventory!", Toast.LENGTH_SHORT).show()
     }
     Scaffold(
         topBar = {
@@ -252,29 +253,29 @@ fun handleReceiptProcessing(
     // ✅ Process and upload to Firestore
     val fsisData = FsisUtils.loadFsisData(context)
 
-    items.forEach { itemName ->
-        val match = FsisUtils.findMatch(itemName, fsisData)
+    items.forEach { scannedItem ->
+        val match = FsisUtils.findMatch(scannedItem.name, fsisData)
         val estimatedExpiry = match?.let {
             FsisUtils.estimateExpiryDate(it, "fridge")
         } ?: ""
 
         val inventoryItem = InventoryItem(
-            name = itemName,
+            name = scannedItem.name,
             category = "Unknown",
             purchaseDate = date,
             estimatedExpiryDate = estimatedExpiry,
             quantity = 1,
             storageLocation = "Fridge"
         )
-
-        viewModel.addItem(inventoryItem, onSuccess = {
-            Log.d("Firestore", "Added $itemName")
-        }, onFailure = { e ->
-            Log.e("Firestore", "Failed to add item: ${e.message}")
-        })
+        //TOO SOON
+//        viewModel.addItem(inventoryItem, onSuccess = {
+//            Log.d("Firestore", "Added $itemName")
+//        }, onFailure = { e ->
+//            Log.e("Firestore", "Failed to add item: ${e.message}")
+//        })
     }
 
-    Toast.makeText(context, "Items added to inventory!", Toast.LENGTH_SHORT).show()
+    //Toast.makeText(context, "Items added to inventory!", Toast.LENGTH_SHORT).show()
 }
 // Function to process image URI using ML Kit OCR
 fun processImageUri(
@@ -305,28 +306,43 @@ fun extractDate(text: String): String {
 }
 
 // Filters out total, payment, store info and keeps likely item lines
-fun extractItems(text: String): List<String> {
+
+fun extractItems(text: String): List<ScannedItem> {
+    val unitRegex = Regex("""(\d+(?:\.\d+)?\s?(g|kg|ml|l|pcs|packs?))""", RegexOption.IGNORE_CASE)
+
     return text.lines()
         .map { it.trim() }
         .filter { line ->
             val lower = line.lowercase()
-
             val isLikelyMetadata = listOf(
                 "total", "visa", "payment", "cashier", "change", "ntuc",
                 "mall", "thank", "saved", "terminal", "transaction", "gst",
                 "selfserv", "amount", "price", "acct", "acnt", "card"
             ).any { keyword -> lower.contains(keyword) }
 
-            val hasMaskedDigits = Regex("""x{4,}|[*]{4,}""").containsMatchIn(line.lowercase())
+            val hasMaskedDigits = Regex("""x{4,}|[*]{4,}""").containsMatchIn(lower)
             val isLongDigitLine = Regex("""\d{4,}""").containsMatchIn(line) && line.length < 25
-
             val isAllCaps = line == line.uppercase() && line.any { it.isLetter() }
 
-            // Only return lines that look like valid item names
             !isLikelyMetadata && !hasMaskedDigits && !isLongDigitLine && isAllCaps
         }
         .filter { it.length > 5 }
+        .map { line ->
+            val unitMatch = unitRegex.find(line)
+            val unitSize = unitMatch?.value ?: ""
+            val cleanedName = unitMatch?.let {
+                line.replace(it.value, "", ignoreCase = true).trim()
+            } ?: line
+
+            ScannedItem(
+                name = cleanedName,
+                quantity = 1,
+                unitSize = unitSize
+            )
+        }
 }
+
+
 
 
 
