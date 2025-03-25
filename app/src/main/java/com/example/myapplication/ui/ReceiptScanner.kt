@@ -32,9 +32,11 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.data.repository.InventoryRepository
 import com.example.myapplication.utils.FsisUtils
 import com.example.myapplication.viewmodel.InventoryViewModel
 import com.example.myapplication.models.InventoryItem
+import com.example.myapplication.viewmodel.InventoryViewModelFactory
 import java.io.File
 import java.io.IOException
 
@@ -47,7 +49,10 @@ fun ReceiptScannerScreen(navController: NavController) {
     val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     var extractedText by remember { mutableStateOf("") }
-    val viewModel: InventoryViewModel = viewModel()
+    val repository = remember { InventoryRepository() }
+    val viewModel: InventoryViewModel = viewModel(
+        factory = InventoryViewModelFactory(repository)
+    )
 
 
     // Launcher for picking an image from the gallery
