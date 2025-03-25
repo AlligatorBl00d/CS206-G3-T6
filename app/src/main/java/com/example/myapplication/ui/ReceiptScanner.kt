@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
+import com.google.gson.Gson
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -46,19 +47,33 @@ fun ReceiptScannerScreen(navController: NavController) {
     ) { uri: Uri? ->
         uri?.let {
             capturedImageUri = it
-            processImageUri(context, it, recognizer) { text ->
-                extractedText = text
+            processImageUri(context, it, recognizer) { rawText ->
+                val date = extractDate(rawText)
+                val items = extractItems(rawText)
+
+                val encodedDate = Uri.encode(date)
+                val encodedItems = Uri.encode(Gson().toJson(items))
+
+                navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
             }
         }
     }
 
+
     // Launcher for capturing an image using the camera
     val cameraLauncher = rememberCameraLauncher { uri ->
         capturedImageUri = uri
-        processImageUri(context, uri, recognizer) { text ->
-            extractedText = text
+        processImageUri(context, uri, recognizer) { rawText ->
+            val date = extractDate(rawText)
+            val items = extractItems(rawText)
+
+            val encodedDate = Uri.encode(date)
+            val encodedItems = Uri.encode(Gson().toJson(items))
+
+            navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
         }
     }
+
 
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -151,27 +166,13 @@ fun processImageUri(
     context: Context,
     uri: Uri,
     recognizer: com.google.mlkit.vision.text.TextRecognizer,
-    onTextExtracted: (String) -> Unit
+    onSuccess: (String) -> Unit
 ) {
     try {
         val image = InputImage.fromFilePath(context, uri)
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                val rawText = visionText.text
-
-                // Extract date and items
-                val date = extractDate(rawText)
-                val items = extractItems(rawText)
-
-                // Build formatted display text
-                val formattedText = buildString {
-                    appendLine("🗓️ Date of Purchase: $date")
-                    appendLine("\n🛒 Items Bought:")
-                    items.forEach { appendLine("- $it") }
-                }
-
-                // Send formatted text to UI
-                onTextExtracted(formattedText)
+                onSuccess(visionText.text)
             }
             .addOnFailureListener { e ->
                 Log.e("OCR", "Text recognition failed", e)
@@ -180,6 +181,7 @@ fun processImageUri(
         Log.e("OCR", "Failed to load image from URI", e)
     }
 }
+
 
 // Extracts date from OCR text using regex
 fun extractDate(text: String): String {

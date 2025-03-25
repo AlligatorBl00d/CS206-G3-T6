@@ -65,6 +65,7 @@ dependencies {
 
     // 🔹 **Navigation**
     implementation("androidx.navigation:navigation-compose:2.7.3") // Latest stable
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // 🔹 **Firebase BoM (Bill of Materials)**
     implementation(platform("com.google.firebase:firebase-bom:33.10.0"))
