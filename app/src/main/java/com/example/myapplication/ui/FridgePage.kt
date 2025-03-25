@@ -1,13 +1,13 @@
 package com.example.myapplication.ui
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,8 +21,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.R
+import com.example.myapplication.models.InventoryItem
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
-// Define data class for items
+// Existing FoodItem for display (internal use only)
 data class FoodItem(
     val name: String,
     val quantity: String,
@@ -31,17 +34,48 @@ data class FoodItem(
     val icon: Int
 )
 
+// Convert InventoryItem to FoodItem for UI
+fun InventoryItem.toDisplay(): FoodItem {
+    val icon = when (imageUrl) {
+        "carrot_image" -> R.drawable.carrot_image
+        "apple_image" -> R.drawable.apple_image
+        "grapes_image" -> R.drawable.grapes_image
+        "chicken_image" -> R.drawable.chicken_image
+        else -> R.drawable.expiring_icon
+    }
+
+    // Optional: Replace with real calculation
+    val daysLeft = "2 days"
+
+    return FoodItem(
+        name = name,
+        quantity = "x$quantity",
+        daysLeft = daysLeft,
+        expiryDate = estimatedExpiryDate,
+        icon = icon
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun FridgeScreen(navController: NavController) {
-    var selectedTab by remember { mutableStateOf(0) } // Track selected tab
-    val foodItems = remember { mutableStateListOf( // ✅ Dynamic list
-        FoodItem("Carrot", "x3", "0 days", "20/03/25", R.drawable.carrot_image),
-        FoodItem("Apple", "x2", "2 days", "22/03/25", R.drawable.apple_image),
-        FoodItem("Grapes", "x3", "2 days", "22/03/25", R.drawable.grapes_image),
-        FoodItem("Chicken", "x1", "4 days", "24/03/25", R.drawable.chicken_image)
-    ) }
+    var selectedTab by remember { mutableStateOf(0) }
+    val db = Firebase.firestore
+    val inventoryItems = remember { mutableStateListOf<InventoryItem>() }
+
+    LaunchedEffect(Unit) {
+        db.collection("inventoryItems")
+            .get()
+            .addOnSuccessListener { result ->
+                val items = result.mapNotNull { it.toObject(InventoryItem::class.java) }
+                inventoryItems.clear()
+                inventoryItems.addAll(items)
+            }
+            .addOnFailureListener { exception ->
+                Log.e("FridgeScreen", "Error fetching items", exception)
+            }
+    }
 
     Scaffold(
         topBar = {
@@ -49,22 +83,19 @@ fun FridgeScreen(navController: NavController) {
                 title = { Text("Fridge", color = Color.White, fontSize = 24.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.White
-                        )
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = Color(0xFF6200EE))
             )
         },
         bottomBar = {
-            BottomNavigationBar(navController, selectedTab, onTabSelected = { selectedTab = it }) // ✅ Fix here
+            BottomNavigationBar(navController, selectedTab, onTabSelected = { selectedTab = it })
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            // Filter Row
+
+            // Filter Row (static for now)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -74,14 +105,18 @@ fun FridgeScreen(navController: NavController) {
                 }
             }
 
-            // Food Items List
+            // Inventory Items List
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                foodItems.forEach { item ->
-                    FoodItemRow(item, onDelete = { foodItems.remove(item) }) // ✅ Pass delete function
+                inventoryItems.forEach { item ->
+                    val displayItem = item.toDisplay()
+                    FoodItemRow(displayItem, onDelete = {
+                        db.collection("inventoryItems").document(item.id).delete()
+                        inventoryItems.remove(item)
+                    })
                 }
             }
         }
@@ -91,7 +126,7 @@ fun FridgeScreen(navController: NavController) {
 @Composable
 fun FilterChip(text: String, selected: Boolean) {
     Button(
-        onClick = {},
+        onClick = { /* TODO: Add filtering */ },
         colors = ButtonDefaults.buttonColors(
             containerColor = if (selected) Color(0xFF6200EE) else Color.LightGray,
             contentColor = Color.White
@@ -103,7 +138,7 @@ fun FilterChip(text: String, selected: Boolean) {
 }
 
 @Composable
-fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) { // ✅ Added delete function
+fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
