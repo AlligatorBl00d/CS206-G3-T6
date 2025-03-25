@@ -308,12 +308,17 @@ fun extractDate(text: String): String {
 // Filters out total, payment, store info and keeps likely item lines
 
 fun extractItems(text: String): List<ScannedItem> {
-    val unitRegex = Regex("""(\d+(?:\.\d+)?\s?(g|kg|ml|l|pcs|packs?))""", RegexOption.IGNORE_CASE)
+    // ✅ Main unit pattern: 230G, 1.5KG, 500ML, 2PCS, 6PACK
+    val unitRegex = Regex("""(\d+(\.\d+)?)(\s)?(g|kg|ml|l|pcs|packs?)""", RegexOption.IGNORE_CASE)
+
+    // ✅ Fallback: handles things like FRD500 → picks up 500 even if no unit
+    val fallbackUnitRegex = Regex("""(\d{2,5})(g|kg|ml|l|pcs|packs?)?""", RegexOption.IGNORE_CASE)
 
     return text.lines()
         .map { it.trim() }
         .filter { line ->
             val lower = line.lowercase()
+
             val isLikelyMetadata = listOf(
                 "total", "visa", "payment", "cashier", "change", "ntuc",
                 "mall", "thank", "saved", "terminal", "transaction", "gst",
@@ -324,12 +329,16 @@ fun extractItems(text: String): List<ScannedItem> {
             val isLongDigitLine = Regex("""\d{4,}""").containsMatchIn(line) && line.length < 25
             val isAllCaps = line == line.uppercase() && line.any { it.isLetter() }
 
+            // ✅ Filter out likely non-item lines
             !isLikelyMetadata && !hasMaskedDigits && !isLongDigitLine && isAllCaps
         }
         .filter { it.length > 5 }
         .map { line ->
-            val unitMatch = unitRegex.find(line)
+            // Try extracting unit size
+            val unitMatch = unitRegex.find(line) ?: fallbackUnitRegex.find(line)
             val unitSize = unitMatch?.value ?: ""
+
+            // Remove the unit match from the item name
             val cleanedName = unitMatch?.let {
                 line.replace(it.value, "", ignoreCase = true).trim()
             } ?: line
