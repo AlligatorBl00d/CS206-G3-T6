@@ -29,9 +29,16 @@ import com.google.gson.Gson
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.utils.FsisUtils
+import com.example.myapplication.viewmodel.InventoryViewModel
+import com.example.myapplication.models.InventoryItem
 import java.io.File
 import java.io.IOException
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptScannerScreen(navController: NavController) {
@@ -40,37 +47,55 @@ fun ReceiptScannerScreen(navController: NavController) {
     val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     var capturedImageUri by remember { mutableStateOf<Uri?>(null) }
     var extractedText by remember { mutableStateOf("") }
+    val viewModel: InventoryViewModel = viewModel()
+
 
     // Launcher for picking an image from the gallery
+//    val imagePickerLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.GetContent()
+//    ) { uri: Uri? ->
+//        uri?.let {
+//            capturedImageUri = it
+//            processImageUri(context, it, recognizer) { rawText ->
+//                val date = extractDate(rawText)
+//                val items = extractItems(rawText)
+//
+//                val encodedDate = Uri.encode(date)
+//                val encodedItems = Uri.encode(Gson().toJson(items))
+//
+//                navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
+//            }
+//        }
+//    }
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             capturedImageUri = it
             processImageUri(context, it, recognizer) { rawText ->
-                val date = extractDate(rawText)
-                val items = extractItems(rawText)
-
-                val encodedDate = Uri.encode(date)
-                val encodedItems = Uri.encode(Gson().toJson(items))
-
-                navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
+                handleReceiptProcessing(context, rawText, viewModel, navController)
             }
         }
     }
 
 
     // Launcher for capturing an image using the camera
+//    val cameraLauncher = rememberCameraLauncher { uri ->
+//        capturedImageUri = uri
+//        processImageUri(context, uri, recognizer) { rawText ->
+//            val date = extractDate(rawText)
+//            val items = extractItems(rawText)
+//
+//            val encodedDate = Uri.encode(date)
+//            val encodedItems = Uri.encode(Gson().toJson(items))
+//
+//            navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
+//        }
+//    }
     val cameraLauncher = rememberCameraLauncher { uri ->
         capturedImageUri = uri
         processImageUri(context, uri, recognizer) { rawText ->
-            val date = extractDate(rawText)
-            val items = extractItems(rawText)
-
-            val encodedDate = Uri.encode(date)
-            val encodedItems = Uri.encode(Gson().toJson(items))
-
-            navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
+            handleReceiptProcessing(context, rawText, viewModel, navController)
         }
     }
 
@@ -86,6 +111,48 @@ fun ReceiptScannerScreen(navController: NavController) {
         }
     )
 
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun handleReceiptProcessing(
+        context: Context,
+        rawText: String,
+        viewModel: InventoryViewModel,
+        navController: NavController
+    ) {
+        val date = extractDate(rawText)
+        val items = extractItems(rawText)
+
+        // ✅ Optional: Navigate to confirmation screen
+        val encodedDate = Uri.encode(date)
+        val encodedItems = Uri.encode(Gson().toJson(items))
+        navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
+
+        // ✅ Process and upload to Firestore
+        val fsisData = FsisUtils.loadFsisData(context)
+
+        items.forEach { itemName ->
+            val match = FsisUtils.findMatch(itemName, fsisData)
+            val estimatedExpiry = match?.let {
+                FsisUtils.estimateExpiryDate(it, "fridge")
+            } ?: ""
+
+            val inventoryItem = InventoryItem(
+                name = itemName,
+                category = "Unknown",
+                purchaseDate = date,
+                estimatedExpiryDate = estimatedExpiry,
+                quantity = 1,
+                storageLocation = "Fridge"
+            )
+
+            viewModel.addItem(inventoryItem, onSuccess = {
+                Log.d("Firestore", "Added $itemName")
+            }, onFailure = { e ->
+                Log.e("Firestore", "Failed to add item: ${e.message}")
+            })
+        }
+
+        Toast.makeText(context, "Items added to inventory!", Toast.LENGTH_SHORT).show()
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -161,6 +228,49 @@ fun ReceiptScannerScreen(navController: NavController) {
     }
 }
 
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun handleReceiptProcessing(
+    context: Context,
+    rawText: String,
+    viewModel: InventoryViewModel,
+    navController: NavController
+) {
+    val date = extractDate(rawText)
+    val items = extractItems(rawText)
+
+    // ✅ Optional: Navigate to confirmation screen
+    val encodedDate = Uri.encode(date)
+    val encodedItems = Uri.encode(Gson().toJson(items))
+    navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
+
+    // ✅ Process and upload to Firestore
+    val fsisData = FsisUtils.loadFsisData(context)
+
+    items.forEach { itemName ->
+        val match = FsisUtils.findMatch(itemName, fsisData)
+        val estimatedExpiry = match?.let {
+            FsisUtils.estimateExpiryDate(it, "fridge")
+        } ?: ""
+
+        val inventoryItem = InventoryItem(
+            name = itemName,
+            category = "Unknown",
+            purchaseDate = date,
+            estimatedExpiryDate = estimatedExpiry,
+            quantity = 1,
+            storageLocation = "Fridge"
+        )
+
+        viewModel.addItem(inventoryItem, onSuccess = {
+            Log.d("Firestore", "Added $itemName")
+        }, onFailure = { e ->
+            Log.e("Firestore", "Failed to add item: ${e.message}")
+        })
+    }
+
+    Toast.makeText(context, "Items added to inventory!", Toast.LENGTH_SHORT).show()
+}
 // Function to process image URI using ML Kit OCR
 fun processImageUri(
     context: Context,

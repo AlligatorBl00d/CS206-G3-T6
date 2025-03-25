@@ -11,14 +11,16 @@ import com.example.myapplication.ui.AppNavigation
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
-
+import androidx.work.*
+import java.util.concurrent.TimeUnit
+import com.example.myapplication.utils.WorkScheduler
 class MainActivity : ComponentActivity() {
 
     private val inventoryRepository = InventoryRepository()  // Firestore repo instance
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        WorkScheduler.scheduleDailyExpiryCheck(applicationContext)
         // 🔹 Firestore Operations in Background
         CoroutineScope(Dispatchers.IO).launch {
             testFirestoreOperations()
