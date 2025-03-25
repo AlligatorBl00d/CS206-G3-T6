@@ -63,6 +63,8 @@ fun FridgeScreen(navController: NavController) {
     var selectedTab by remember { mutableStateOf(0) }
     val db = Firebase.firestore
     val inventoryItems = remember { mutableStateListOf<InventoryItem>() }
+//    val viewModel: InventoryViewModel = viewModel() // 🔹 Place this here
+//    val inventoryItems by viewModel.inventoryItems.collectAsState()
 
     LaunchedEffect(Unit) {
         db.collection("inventoryItems")
