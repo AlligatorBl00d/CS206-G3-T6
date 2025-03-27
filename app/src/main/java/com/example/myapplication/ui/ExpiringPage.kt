@@ -1,6 +1,9 @@
 package com.example.foodinventory.ui.theme
 
+import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,39 +18,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.myapplication.R
+import com.example.myapplication.models.InventoryItem
 import com.example.myapplication.ui.BottomNavigationBar
-
-data class ExpiringItem(
-    val name: String,
-    val imageRes: Int,
-    val quantity: Int,
-    val daysLeft: String,
-    val useBy: String
-)
+import com.google.firebase.firestore.ktx.firestore
+import com.google.firebase.ktx.Firebase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpiringPageScreen(navController: NavController) {
     var selectedTab by remember { mutableStateOf(0) }
+    val db = Firebase.firestore
+    val expiringItems = remember { mutableStateListOf<InventoryItem>() }
 
-    var items by remember {
-        mutableStateOf(
-            listOf(
-                ExpiringItem("Carrot", R.drawable.carrot_image, 3, "0 days", "20/03/25"),
-                ExpiringItem("Apple", R.drawable.apple_image, 2, "2 days", "22/03/25"),
-                ExpiringItem("Grapes", R.drawable.grapes_image, 3, "2 days", "22/03/25"),
-                ExpiringItem("Chicken", R.drawable.chicken_image, 1, "4 days", "24/03/25"),
-                ExpiringItem("TestingScrolling", R.drawable.snowflake, 100, "400 days", "24/03/25"),
-            )
-        )
-    }
-
-    var selectedItems by remember { mutableStateOf(setOf<ExpiringItem>()) }
+    var selectedItems by remember { mutableStateOf(setOf<InventoryItem>()) }
     var showDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        db.collection("inventoryItems")
+            .get()
+            .addOnSuccessListener { result ->
+                val items = result.mapNotNull { it.toObject(InventoryItem::class.java) }
+                    .filter { it.estimatedExpiryDate.isNotEmpty() } // Add actual expiry logic here
+                expiringItems.clear()
+                expiringItems.addAll(items)
+            }
+            .addOnFailureListener { exception ->
+                Log.e("ExpiringPage", "Error fetching items", exception)
+            }
+    }
 
     Scaffold(
         topBar = {
@@ -76,7 +79,6 @@ fun ExpiringPageScreen(navController: NavController) {
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                // Static warning section
                 Spacer(modifier = Modifier.height(8.dp))
                 Image(
                     painter = painterResource(id = R.drawable.warning_image),
@@ -97,15 +99,14 @@ fun ExpiringPageScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Scrollable list of items
                 LazyColumn(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
                 ) {
-                    items(items) { item ->
+                    items(expiringItems) { item ->
                         val isSelected = selectedItems.contains(item)
-                        ExpiringItemCard(
+                        InventoryItemCard(
                             item = item,
                             isSelected = isSelected,
                             onClick = {
@@ -122,7 +123,6 @@ fun ExpiringPageScreen(navController: NavController) {
                     }
                 }
 
-                // Static button at the bottom
                 Button(
                     onClick = {
                         if (selectedItems.isNotEmpty()) {
@@ -140,7 +140,6 @@ fun ExpiringPageScreen(navController: NavController) {
                 }
             }
 
-            // Confirmation dialog
             if (showDialog) {
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
@@ -148,7 +147,17 @@ fun ExpiringPageScreen(navController: NavController) {
                     confirmButton = {
                         TextButton(
                             onClick = {
-                                items = items.filterNot { selectedItems.contains(it) }
+                                val db = Firebase.firestore
+                                selectedItems.forEach { item ->
+                                    db.collection("inventoryItems").document(item.id).delete()
+                                        .addOnSuccessListener {
+                                            Log.d("ExpiringPage", "Deleted ${item.name}")
+                                            expiringItems.remove(item) // Update UI
+                                        }
+                                        .addOnFailureListener {
+                                            Log.e("ExpiringPage", "Failed to delete ${item.name}", it)
+                                        }
+                                }
                                 selectedItems = emptySet()
                                 showDialog = false
                             }
@@ -168,11 +177,19 @@ fun ExpiringPageScreen(navController: NavController) {
 }
 
 @Composable
-fun ExpiringItemCard(
-    item: ExpiringItem,
+fun InventoryItemCard(
+    item: InventoryItem,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val icon = when (item.imageUrl) {
+        "carrot_image" -> R.drawable.carrot_image
+        "apple_image" -> R.drawable.apple_image
+        "grapes_image" -> R.drawable.grapes_image
+        "chicken_image" -> R.drawable.chicken_image
+        else -> R.drawable.expiring_icon
+    }
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
@@ -192,7 +209,7 @@ fun ExpiringItemCard(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(id = item.imageRes),
+                    painter = painterResource(id = icon),
                     contentDescription = item.name,
                     modifier = Modifier
                         .size(40.dp)
@@ -206,7 +223,7 @@ fun ExpiringItemCard(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Use by ${item.useBy}",
+                        text = "Use by ${item.estimatedExpiryDate}",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -214,7 +231,7 @@ fun ExpiringItemCard(
             }
 
             Text(
-                text = item.daysLeft,
+                text = "2 days", // You can calculate days left here
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
