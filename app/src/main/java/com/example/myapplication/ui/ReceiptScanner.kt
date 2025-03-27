@@ -38,6 +38,7 @@ import com.example.myapplication.viewmodel.InventoryViewModel
 import com.example.myapplication.models.InventoryItem
 import com.example.myapplication.viewmodel.InventoryViewModelFactory
 import com.example.myapplication.models.ScannedItem
+import com.example.myapplication.utils.OcrMappingUtils
 import java.io.File
 import java.io.IOException
 
@@ -127,38 +128,12 @@ fun ReceiptScannerScreen(navController: NavController) {
         val date = extractDate(rawText)
         val items = extractItems(rawText)
 
-        // ✅ Optional: Navigate to confirmation screen
+        // ✅ ONLY navigating to confirmation screen — no Firestore logic
         val encodedDate = Uri.encode(date)
         val encodedItems = Uri.encode(Gson().toJson(items))
         navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
-
-        // ✅ Process and upload to Firestore
-        val fsisData = FsisUtils.loadFsisData(context)
-
-        items.forEach { scannedItem ->
-            val match = FsisUtils.findMatch(scannedItem.name, fsisData)
-            val estimatedExpiry = match?.let {
-                FsisUtils.estimateExpiryDate(it, "fridge")
-            } ?: ""
-
-            val inventoryItem = InventoryItem(
-                name = scannedItem.name,
-                category = "Unknown",
-                purchaseDate = date,
-                estimatedExpiryDate = estimatedExpiry,
-                quantity = 1,
-                storageLocation = "Fridge"
-            )
-
-            viewModel.addItem(inventoryItem, onSuccess = {
-                Log.d("Firestore", "Added $scannedItem")
-            }, onFailure = { e ->
-                Log.e("Firestore", "Failed to add item: ${e.message}")
-            })
-        }
-
-        //Toast.makeText(context, "Items added to inventory!", Toast.LENGTH_SHORT).show()
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -328,9 +303,13 @@ fun extractItems(text: String): List<ScannedItem> {
             val hasMaskedDigits = Regex("""x{4,}|[*]{4,}""").containsMatchIn(lower)
             val isLongDigitLine = Regex("""\d{4,}""").containsMatchIn(line) && line.length < 25
             val isAllCaps = line == line.uppercase() && line.any { it.isLetter() }
+            val isTimeFormat = Regex("""\b\d{1,2}[:.]\d{0,2}\s?(AM|PM)?\b""", RegexOption.IGNORE_CASE).containsMatchIn(line)
+
 
             // ✅ Filter out likely non-item lines
-            !isLikelyMetadata && !hasMaskedDigits && !isLongDigitLine && isAllCaps
+            // ✅ Filter out likely non-item lines
+            !isLikelyMetadata && !hasMaskedDigits && !isLongDigitLine && isAllCaps && !isTimeFormat
+
         }
         .filter { it.length > 5 }
         .map { line ->

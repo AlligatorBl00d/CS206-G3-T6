@@ -22,11 +22,13 @@ class InventoryRepository {
     // 🔹 Add item to Firestore
     suspend fun addItem(item: InventoryItem): Boolean {
         return try {
-            inventoryCollection.document(item.id).set(item).await()
-            Log.d("Firestore", "✅ Item Added: ${item.name}")
+            val document = if (item.id.isBlank()) inventoryCollection.document() else inventoryCollection.document(item.id)
+            val itemWithId = item.copy(id = document.id)  // Ensure it has an ID before saving
+            document.set(itemWithId).await()
+            Log.d("Firestore", "✅ Item Added: ${itemWithId.name}")
             true
         } catch (e: Exception) {
-            Log.e("Firestore", "Error adding item: ${item.name}", e)
+            Log.e("Firestore", "❌ Error adding item: ${item.name} - ${e.message}", e)
             false
         }
     }

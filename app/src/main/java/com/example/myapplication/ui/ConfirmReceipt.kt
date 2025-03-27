@@ -1,5 +1,6 @@
 package com.example.myapplication.ui
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +19,8 @@ import androidx.navigation.NavController
 import com.example.myapplication.data.repository.InventoryRepository
 import com.example.myapplication.models.InventoryItem
 import com.example.myapplication.models.ScannedItem
+import com.example.myapplication.utils.FsisUtils
+import com.example.myapplication.utils.OcrMappingUtils
 import com.example.myapplication.viewmodel.InventoryViewModel
 import com.example.myapplication.viewmodel.InventoryViewModelFactory
 
@@ -105,26 +108,50 @@ fun ConfirmReceiptPage(
 
             Button(
                 onClick = {
+//
+
+                    val fsisData = FsisUtils.loadFsisData(context)
+
                     itemList.forEach { scannedItem ->
+                        val mappedName = OcrMappingUtils.applyMapping(scannedItem.name, context)
+
+                        // Skip clearly invalid items (metadata lines)
+                        if (
+                            mappedName.lowercase().contains("approved") ||
+                            mappedName.lowercase().contains("signature") ||
+                            mappedName.lowercase().contains("contactless") ||
+                            mappedName.length < 5
+                        ) {
+                            Log.d("ConfirmScreen", "Skipping invalid item: $mappedName")
+                            return@forEach
+                        }
+
+                        val match = FsisUtils.findMatch(mappedName, fsisData)
+                        val estimatedExpiry = match?.let {
+                            FsisUtils.estimateExpiryDate(it, "fridge")
+                        } ?: ""
+
                         val inventoryItem = InventoryItem(
-                            name = scannedItem.name,
+                            id = java.util.UUID.randomUUID().toString(),
+                            name = mappedName,
                             category = "Unknown",
                             quantity = scannedItem.quantity,
                             storageLocation = "Fridge",
                             purchaseDate = date,
-                            estimatedExpiryDate = ""
+                            estimatedExpiryDate = estimatedExpiry
                         )
 
                         viewModel.addItem(
                             inventoryItem,
-                            onSuccess = {},
+                            onSuccess = {
+                                Log.d("Firestore", "✅ Added ${inventoryItem.name}")
+                            },
                             onFailure = {
-                                Toast.makeText(context, "Failed to add ${scannedItem.name}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "❌ Failed to add ${inventoryItem.name}", Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
-                    Toast.makeText(context, "Items confirmed!", Toast.LENGTH_SHORT).show()
-                    navController.popBackStack()
+
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
