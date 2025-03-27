@@ -9,8 +9,10 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.myapplication.data.repository.InventoryRepository
@@ -36,12 +38,13 @@ fun ConfirmReceiptPage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Confirm Purchases") },
+                title = { Text("Confirm Purchases", color = Color.White, fontSize = 24.sp) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(containerColor = Color(0xFF6200EE))
             )
         }
     ) { innerPadding ->
@@ -109,7 +112,7 @@ fun ConfirmReceiptPage(
                             quantity = scannedItem.quantity,
                             storageLocation = "Fridge",
                             purchaseDate = date,
-                            estimatedExpiryDate = "" // You can replace this with FSIS estimate if needed
+                            estimatedExpiryDate = ""
                         )
 
                         viewModel.addItem(
@@ -123,7 +126,11 @@ fun ConfirmReceiptPage(
                     Toast.makeText(context, "Items confirmed!", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF6200EE), // Same as top bar
+                    contentColor = Color.White
+                )
             ) {
                 Text("Confirm")
             }
