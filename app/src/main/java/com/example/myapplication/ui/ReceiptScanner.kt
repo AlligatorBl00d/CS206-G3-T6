@@ -38,6 +38,7 @@ import com.example.myapplication.viewmodel.InventoryViewModel
 import com.example.myapplication.models.InventoryItem
 import com.example.myapplication.viewmodel.InventoryViewModelFactory
 import com.example.myapplication.models.ScannedItem
+import com.example.myapplication.models.extractFoodNameFromFuzzy
 import java.io.File
 import java.io.IOException
 
@@ -339,9 +340,11 @@ fun extractItems(text: String): List<ScannedItem> {
             val unitSize = unitMatch?.value ?: ""
 
             // Remove the unit match from the item name
-            val cleanedName = unitMatch?.let {
+            val cleanedRaw = unitMatch?.let {
                 line.replace(it.value, "", ignoreCase = true).trim()
             } ?: line
+
+            val cleanedName = extractFoodNameFromFuzzy(cleanedRaw)
 
             ScannedItem(
                 name = cleanedName,
