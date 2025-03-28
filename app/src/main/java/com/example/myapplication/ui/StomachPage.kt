@@ -9,8 +9,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Mic
+//import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -21,6 +22,48 @@ import androidx.compose.ui.unit.*
 import androidx.navigation.NavController
 import com.example.myapplication.R
 import com.example.myapplication.ui.BottomNavigationBar
+
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import com.github.kotlintelegrambot.bot
+import com.github.kotlintelegrambot.dispatch
+import com.github.kotlintelegrambot.dispatcher.command
+import com.github.kotlintelegrambot.dispatcher.text
+import com.github.kotlintelegrambot.entities.ChatId
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class TelegramBot(private val token: String) {
+    private val bot = bot {
+        token = this@TelegramBot.token
+        dispatch {
+            text {
+                val response = "You said: ${text}"
+                bot.sendMessage(ChatId.fromId(message.chat.id), response)
+            }
+            command("start") {
+                val response = "Welcome to the Food Inventory bot!"
+                bot.sendMessage(ChatId.fromId(message.chat.id), response)
+            }
+        }
+    }
+
+    fun start() {
+        bot.startPolling()
+    }
+
+    suspend fun sendMessage(text: String): String = withContext(Dispatchers.IO) {
+        when {
+            text.contains("remove chicken", ignoreCase = true) -> "Successfully removed chicken from inventory."
+            text.contains("i ate chicken", ignoreCase = true) -> "Successfully removed chicken from inventory."
+            text.contains("remove fish cake", ignoreCase = true) -> "Successfully removed fish cake from inventory."
+            text.contains("i ate fish cake", ignoreCase = true) -> "Successfully removed fish cake from inventory."
+            else -> "I'm not sure how to process that. Can you be more specific?"
+        }
+    }
+}
+
 
 data class ChatMessage(val text: String, val isUser: Boolean)
 
@@ -37,6 +80,13 @@ fun StomachScreen(navController: NavController) {
                 ChatMessage("Successfully removed", isUser = false)
             )
         )
+    }
+
+    val coroutineScope = rememberCoroutineScope()
+    val telegramBot = remember { TelegramBot("7967667172:AAFTPRH8k5lgaKRkiXN9LuJiwRSPCHtSq7A") }
+
+    LaunchedEffect(Unit) {
+        telegramBot.start()
     }
 
     Scaffold(
@@ -113,8 +163,14 @@ fun StomachScreen(navController: NavController) {
                     onClick = {
                         if (inputText.isNotBlank()) {
                             messages = messages + ChatMessage(inputText, isUser = true)
+                            val currentInput = inputText
                             inputText = ""
                             // TODO: Add chatbot response logic here
+                            coroutineScope.launch {
+                                val botResponse = telegramBot.sendMessage(currentInput)
+                                val botMessage = ChatMessage(botResponse, isUser = false)
+                                messages = messages + botMessage
+                            }
                         }
                     },
                     modifier = Modifier
@@ -122,8 +178,8 @@ fun StomachScreen(navController: NavController) {
                         .background(Color(0xFF6200EE), shape = CircleShape)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Mic,
-                        contentDescription = "Send voice",
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "Send input",
                         tint = Color.White
                     )
                 }

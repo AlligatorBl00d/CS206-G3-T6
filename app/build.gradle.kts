@@ -80,6 +80,9 @@ dependencies {
     // 🔹 **Coil (Image Loading)**
     implementation("io.coil-kt:coil-compose:2.2.2")
 
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
+    implementation("com.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.0.7")
+
     // 🔹 **Testing Dependencies**
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
