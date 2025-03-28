@@ -282,22 +282,66 @@ fun extractDate(text: String): String {
 
 // Filters out total, payment, store info and keeps likely item lines
 
-fun extractItems(text: String): List<ScannedItem> {
-    // ✅ Main unit pattern: 230G, 1.5KG, 500ML, 2PCS, 6PACK
-    val unitRegex = Regex("""(\d+(\.\d+)?)(\s)?(g|kg|ml|l|pcs|packs?)""", RegexOption.IGNORE_CASE)
+//fun extractItems(text: String): List<ScannedItem> {
+//    // ✅ Main unit pattern: 230G, 1.5KG, 500ML, 2PCS, 6PACK
+//    val unitRegex = Regex("""(\d+(\.\d+)?)(\s)?(g|kg|ml|l|pcs|packs?)""", RegexOption.IGNORE_CASE)
+//
+//    // ✅ Fallback: handles things like FRD500 → picks up 500 even if no unit
+//    val fallbackUnitRegex = Regex("""(\d{2,5})(g|kg|ml|l|pcs|packs?)?""", RegexOption.IGNORE_CASE)
+//
+//    return text.lines()
+//        .map { it.trim() }
+//        .filter { line ->
+//            val lower = line.lowercase()
+//
+//            val isLikelyMetadata = listOf(
+//                "total", "visa", "payment", "cashier", "change", "ntuc",
+//                "mall", "thank", "saved", "terminal", "transaction", "gst",
+//                "selfserv", "amount", "price", "acct", "acnt", "card"
+//            ).any { keyword -> lower.contains(keyword) }
+//
+//            val hasMaskedDigits = Regex("""x{4,}|[*]{4,}""").containsMatchIn(lower)
+//            val isLongDigitLine = Regex("""\d{4,}""").containsMatchIn(line) && line.length < 25
+//            val isAllCaps = line == line.uppercase() && line.any { it.isLetter() }
+//            val isTimeFormat = Regex("""\b\d{1,2}[:.]\d{0,2}\s?(AM|PM)?\b""", RegexOption.IGNORE_CASE).containsMatchIn(line)
+//
+//
+//            // ✅ Filter out likely non-item lines
+//            // ✅ Filter out likely non-item lines
+//            !isLikelyMetadata && !hasMaskedDigits && !isLongDigitLine && isAllCaps && !isTimeFormat
+//
+//        }
+//        .filter { it.length > 5 }
+//        .map { line ->
+//            // Try extracting unit size
+//            val unitMatch = unitRegex.find(line) ?: fallbackUnitRegex.find(line)
+//            val unitSize = unitMatch?.value ?: ""
+//
+//            // Remove the unit match from the item name
+//            val cleanedName = unitMatch?.let {
+//                line.replace(it.value, "", ignoreCase = true).trim()
+//            } ?: line
+//
+//            ScannedItem(
+//                name = cleanedName,
+//                quantity = 1,
+//                unitSize = unitSize
+//            )
+//        }
+//}
 
-    // ✅ Fallback: handles things like FRD500 → picks up 500 even if no unit
-    val fallbackUnitRegex = Regex("""(\d{2,5})(g|kg|ml|l|pcs|packs?)?""", RegexOption.IGNORE_CASE)
+
+fun extractItems(text: String): List<ScannedItem> {
+    val unitRegex = Regex("""(\d+(\.\d+)?)(\s)?(g|kg|ml|l|pcs|packs?)""", RegexOption.IGNORE_CASE)
+    val fallbackUnitRegex = Regex("""(\d{2,5})(?!\s?(g|kg|ml|l|pcs|packs?))""", RegexOption.IGNORE_CASE)
 
     return text.lines()
         .map { it.trim() }
         .filter { line ->
             val lower = line.lowercase()
-
             val isLikelyMetadata = listOf(
-                "total", "visa", "payment", "cashier", "change", "ntuc",
-                "mall", "thank", "saved", "terminal", "transaction", "gst",
-                "selfserv", "amount", "price", "acct", "acnt", "card"
+                "total", "visa", "payment", "cashier", "change", "ntuc", "mall", "thank", "saved",
+                "terminal", "transaction", "gst", "selfserv", "amount", "price", "acct", "acnt", "card"
             ).any { keyword -> lower.contains(keyword) }
 
             val hasMaskedDigits = Regex("""x{4,}|[*]{4,}""").containsMatchIn(lower)
@@ -305,22 +349,24 @@ fun extractItems(text: String): List<ScannedItem> {
             val isAllCaps = line == line.uppercase() && line.any { it.isLetter() }
             val isTimeFormat = Regex("""\b\d{1,2}[:.]\d{0,2}\s?(AM|PM)?\b""", RegexOption.IGNORE_CASE).containsMatchIn(line)
 
-
-            // ✅ Filter out likely non-item lines
-            // ✅ Filter out likely non-item lines
             !isLikelyMetadata && !hasMaskedDigits && !isLongDigitLine && isAllCaps && !isTimeFormat
-
         }
         .filter { it.length > 5 }
         .map { line ->
-            // Try extracting unit size
-            val unitMatch = unitRegex.find(line) ?: fallbackUnitRegex.find(line)
-            val unitSize = unitMatch?.value ?: ""
+            val unitMatch = unitRegex.find(line)
+            val fallbackMatch = fallbackUnitRegex.find(line)
 
-            // Remove the unit match from the item name
-            val cleanedName = unitMatch?.let {
-                line.replace(it.value, "", ignoreCase = true).trim()
-            } ?: line
+            val (unitSize, cleanedName) = when {
+                unitMatch != null -> {
+                    val matched = unitMatch.value
+                    matched to line.replace(matched, "", ignoreCase = true).trim()
+                }
+                fallbackMatch != null -> {
+                    val matched = fallbackMatch.value
+                    "${matched}G" to line.replace(matched, "", ignoreCase = true).trim()
+                }
+                else -> "" to line
+            }
 
             ScannedItem(
                 name = cleanedName,
@@ -329,9 +375,6 @@ fun extractItems(text: String): List<ScannedItem> {
             )
         }
 }
-
-
-
 
 
 

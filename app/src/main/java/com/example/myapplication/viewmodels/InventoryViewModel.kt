@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.models.InventoryItem
@@ -97,6 +98,7 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
         itemName: String,
         category: String,
         quantity: Int,
+        unitSize: String,
         storageLocation: String,
         purchaseDate: String,
         onSuccess: () -> Unit,
@@ -114,6 +116,7 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
                 name = itemName,
                 category = category,
                 quantity = quantity,
+                unitSize = unitSize,
                 storageLocation = storageLocation,
                 purchaseDate = purchaseDate,
                 estimatedExpiryDate = estimatedExpiry

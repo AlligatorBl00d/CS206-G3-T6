@@ -50,12 +50,18 @@ object FsisUtils {
 
     fun findMatch(name: String, data: List<FsisFoodItem>): FsisFoodItem? {
         val lowerName = name.lowercase()
-        val allNames = data.flatMap { listOf(it.name) + it.keywords }
 
-        val bestMatch = fuzzyMatch(lowerName, allNames)
-        return data.find { it.name.equals(bestMatch, true) || it.keywords.contains(bestMatch) }
+        val candidates = data.flatMap { item ->
+            listOf(item.name.lowercase()) + item.keywords.map { it.lowercase() }
+        }
+
+        val bestMatch = fuzzyMatch(lowerName, candidates)
+
+        return data.find { item ->
+            item.name.equals(bestMatch, ignoreCase = true) ||
+                    item.keywords.any { it.equals(bestMatch, ignoreCase = true) }
+        }
     }
-
     fun fuzzyMatch(input: String, candidates: List<String>): String? {
         return candidates.minByOrNull { candidate ->
             levenshteinDistance(input.lowercase(), candidate.lowercase())

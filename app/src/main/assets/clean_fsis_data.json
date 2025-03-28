@@ -1377,24 +1377,24 @@
   {
     "name": "Fried chicken",
     "subtitle": null,
-    "keywords": "Fried chicken,chicken",
-    "refrigeration_min": null,
-    "refrigeration_max": null,
-    "refrigeration_unit": null,
-    "freezing_min": null,
-    "freezing_max": null,
-    "freezing_unit": null
+    "keywords": "Fried chicken,chicken,Spicy Japanese Fried Chicken,Spicy Chicken",
+    "refrigeration_min": 3.0,
+    "refrigeration_max": 5.0,
+    "refrigeration_unit": "Days",
+    "freezing_min": 30.0,
+    "freezing_max": 90.0,
+    "freezing_unit": "Days"
   },
   {
     "name": "Poultry pieces",
     "subtitle": "covered with gravy or broth",
     "keywords": "Poultry pieces,gravy,broth,poultry,pieces,piece",
-    "refrigeration_min": null,
-    "refrigeration_max": null,
-    "refrigeration_unit": null,
-    "freezing_min": null,
-    "freezing_max": null,
-    "freezing_unit": null
+    "refrigeration_min": 3.0,
+    "refrigeration_max": 4.0,
+    "refrigeration_unit": "Days",
+    "freezing_min": 4.0,
+    "freezing_max": 4.0,
+    "freezing_unit": "Months"
   },
   {
     "name": "Rotisserie chicken",
@@ -1494,6 +1494,17 @@
     "freezing_min": 9.0,
     "freezing_max": 9.0,
     "freezing_unit": "Months"
+  },
+  {
+    "name": "Fish Cake",
+    "subtitle": null,
+    "keywords": "Fish Cake,fishcake",
+    "refrigeration_min": 3,
+    "refrigeration_max": 5,
+    "refrigeration_unit": "days",
+    "freezing_min": 30,
+    "freezing_max": 60,
+    "freezing_unit": "days"
   },
   {
     "name": "Scallops",

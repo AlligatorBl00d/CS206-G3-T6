@@ -19,10 +19,12 @@ import androidx.navigation.NavController
 import com.example.myapplication.data.repository.InventoryRepository
 import com.example.myapplication.models.InventoryItem
 import com.example.myapplication.models.ScannedItem
+import com.example.myapplication.notifications.NotificationHelper
 import com.example.myapplication.utils.FsisUtils
 import com.example.myapplication.utils.OcrMappingUtils
 import com.example.myapplication.viewmodel.InventoryViewModel
 import com.example.myapplication.viewmodel.InventoryViewModelFactory
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +35,7 @@ fun ConfirmReceiptPage(
 ) {
     var itemList by remember { mutableStateOf(initialItems.toMutableList()) }
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()  // ✅ Add this
     val viewModel: InventoryViewModel = viewModel(
         factory = InventoryViewModelFactory(InventoryRepository())
     )
@@ -108,23 +111,27 @@ fun ConfirmReceiptPage(
 
             Button(
                 onClick = {
-//
-
                     val fsisData = FsisUtils.loadFsisData(context)
 
-                    itemList.forEach { scannedItem ->
+                    // ✅ Filter out invalid items BEFORE loop
+                    val validItems = itemList.filter { scannedItem ->
                         val mappedName = OcrMappingUtils.applyMapping(scannedItem.name, context)
+                        !mappedName.lowercase().contains("approved") &&
+                                !mappedName.lowercase().contains("signature") &&
+                                !mappedName.lowercase().contains("contactless") &&
+                                mappedName.length >= 5
+                    }
 
-                        // Skip clearly invalid items (metadata lines)
-                        if (
-                            mappedName.lowercase().contains("approved") ||
-                            mappedName.lowercase().contains("signature") ||
-                            mappedName.lowercase().contains("contactless") ||
-                            mappedName.length < 5
-                        ) {
-                            Log.d("ConfirmScreen", "Skipping invalid item: $mappedName")
-                            return@forEach
-                        }
+                    var successCount = 0
+                    var attemptedCount = 0
+
+                    if (validItems.isEmpty()) {
+                        Toast.makeText(context, "No valid items to add.", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    validItems.forEach { scannedItem ->
+                        val mappedName = OcrMappingUtils.applyMapping(scannedItem.name, context)
 
                         val match = FsisUtils.findMatch(mappedName, fsisData)
                         val estimatedExpiry = match?.let {
@@ -136,6 +143,7 @@ fun ConfirmReceiptPage(
                             name = mappedName,
                             category = "Unknown",
                             quantity = scannedItem.quantity,
+                            unitSize = scannedItem.unitSize,
                             storageLocation = "Fridge",
                             purchaseDate = date,
                             estimatedExpiryDate = estimatedExpiry
@@ -144,21 +152,41 @@ fun ConfirmReceiptPage(
                         viewModel.addItem(
                             inventoryItem,
                             onSuccess = {
-                                Log.d("Firestore", "✅ Added ${inventoryItem.name}")
-                                navController.navigate("home") {
-                                    popUpTo("confirm_receipt") { inclusive = true } // optional: clears back stack
+                                successCount++
+                                attemptedCount++
+
+                                if (attemptedCount == validItems.size) {
+                                    NotificationHelper.sendAddSuccessNotification(context, successCount)
+
+                                    // ✅ Use a coroutine to delay outside of Compose scope
+                                    coroutineScope.launch {
+                                        kotlinx.coroutines.delay(500)
+                                        navController.navigate("home") {
+                                            popUpTo("confirm_receipt") { inclusive = true }
+                                        }
+                                    }
                                 }
                             },
                             onFailure = {
-                                Toast.makeText(context, "❌ Failed to add ${inventoryItem.name}", Toast.LENGTH_SHORT).show()
-                                navController.navigate("home") {
-                                    popUpTo("confirm_receipt") { inclusive = true } // optional: clears back stack
+                                attemptedCount++
+                                Toast.makeText(
+                                    context,
+                                    "❌ Failed to add ${inventoryItem.name}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                if (attemptedCount == validItems.size) {
+                                    navController.navigate("home") {
+                                        popUpTo("confirm_receipt") { inclusive = true }
+                                    }
+                                    NotificationHelper.sendAddSuccessNotification(context, successCount)
+
                                 }
                             }
                         )
                     }
-
-                },
+                }
+                ,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF6200EE), // Same as top bar

@@ -30,7 +30,7 @@ class ExpiryCheckWorker(
             val today = LocalDate.now()
 
             Log.d("ExpiryCheck", "📦 Inventory Snapshot Size: ${items.size}")
-            val formatter = DateTimeFormatter.ofPattern("dd/MM/yy")
+            val formatter = DateTimeFormatter.ISO_DATE
 
             items.forEach { item ->
                 Log.d("ExpiryCheck", "Item: ${item.name}, Expiry: ${item.estimatedExpiryDate}")
