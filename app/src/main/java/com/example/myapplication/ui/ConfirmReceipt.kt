@@ -145,9 +145,15 @@ fun ConfirmReceiptPage(
                             inventoryItem,
                             onSuccess = {
                                 Log.d("Firestore", "✅ Added ${inventoryItem.name}")
+                                navController.navigate("home") {
+                                    popUpTo("confirm_receipt") { inclusive = true } // optional: clears back stack
+                                }
                             },
                             onFailure = {
                                 Toast.makeText(context, "❌ Failed to add ${inventoryItem.name}", Toast.LENGTH_SHORT).show()
+                                navController.navigate("home") {
+                                    popUpTo("confirm_receipt") { inclusive = true } // optional: clears back stack
+                                }
                             }
                         )
                     }

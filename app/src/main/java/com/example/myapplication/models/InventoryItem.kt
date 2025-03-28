@@ -7,6 +7,7 @@ data class InventoryItem(
     val purchaseDate: String = "",
     val estimatedExpiryDate: String = "",
     val quantity: Int = 0,
+    val unitSize: String = "", // e.g., "230g"
     val storageLocation: String = "",
     val imageUrl: String = ""
 ) {
