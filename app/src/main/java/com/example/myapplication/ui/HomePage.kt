@@ -1,6 +1,7 @@
 package com.example.myapplication.ui
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,6 +33,8 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.example.myapplication.R
 import com.example.myapplication.workers.ExpiryCheckWorker
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 
 data class Item(val title: String, val subtitle: String)
 
@@ -41,14 +44,29 @@ data class Item(val title: String, val subtitle: String)
 fun HomeScreen(navController: NavHostController) {
     //val context = LocalContext.current
 
-//    LaunchedEffect(Unit) {
-//        val request = OneTimeWorkRequestBuilder<ExpiryCheckWorker>().build()
-//        WorkManager.getInstance(context).enqueue(request)
-//    }
+    var fridgeItemCount by remember { mutableStateOf(0) }
+    val db = Firebase.firestore
+
+    LaunchedEffect(Unit) {
+        db.collection("inventoryItems")
+            .get()
+            .addOnSuccessListener { result ->
+                // Only count items in the fridge
+                val count = result.documents.count {
+                    val location = it.getString("storageLocation")?.lowercase()
+                    location == "fridge"
+                }
+                fridgeItemCount = count
+            }
+            .addOnFailureListener {
+                Log.e("HomePage", "Failed to fetch fridge items", it)
+            }
+    }
+
     val items = listOf(
-        Item("Fridge", "5 items total"),
-        Item("Freezer", "8 items total"),
-        Item("Pantry", "12 items total")
+        Item("Fridge", "$fridgeItemCount items total"),
+        Item("Freezer", "Not-in-use"),
+        Item("Pantry", "Not-in-use")
     )
 
     var selectedTab by remember { mutableStateOf(0) }

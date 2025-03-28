@@ -146,7 +146,8 @@ fun ConfirmReceiptPage(
                             unitSize = scannedItem.unitSize,
                             storageLocation = "Fridge",
                             purchaseDate = date,
-                            estimatedExpiryDate = estimatedExpiry
+                            estimatedExpiryDate = estimatedExpiry,
+                            imageUrl = mappedName.trim().lowercase().replace(" ", "") + "_image"
                         )
 
                         viewModel.addItem(

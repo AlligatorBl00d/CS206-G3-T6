@@ -27,6 +27,9 @@ import com.example.myapplication.models.InventoryItem
 import com.example.myapplication.ui.BottomNavigationBar
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +46,16 @@ fun ExpiringPageScreen(navController: NavController) {
             .get()
             .addOnSuccessListener { result ->
                 val items = result.mapNotNull { it.toObject(InventoryItem::class.java) }
-                    .filter { it.estimatedExpiryDate.isNotEmpty() } // Add actual expiry logic here
+                    .filter { it.estimatedExpiryDate.isNotEmpty() }
+                    .sortedBy {
+                        try {
+                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                            val expiry = LocalDate.parse(it.estimatedExpiryDate, formatter)
+                            expiry
+                        } catch (e: Exception) {
+                            LocalDate.MAX
+                        }
+                    }
                 expiringItems.clear()
                 expiringItems.addAll(items)
             }
@@ -152,7 +164,7 @@ fun ExpiringPageScreen(navController: NavController) {
                                     db.collection("inventoryItems").document(item.id).delete()
                                         .addOnSuccessListener {
                                             Log.d("ExpiringPage", "Deleted ${item.name}")
-                                            expiringItems.remove(item) // Update UI
+                                            expiringItems.remove(item)
                                         }
                                         .addOnFailureListener {
                                             Log.e("ExpiringPage", "Failed to delete ${item.name}", it)
@@ -187,8 +199,28 @@ fun InventoryItemCard(
         "apple_image" -> R.drawable.apple_image
         "grapes_image" -> R.drawable.grapes_image
         "chicken_image" -> R.drawable.chicken_image
+        "fishcake_image" -> R.drawable.fishcake_image
+        "strawberry_image" -> R.drawable.strawberry_image
+        "spicyjapanesefriedchicken_image" -> R.drawable.spicyjapanesefriedchicken_image
         else -> R.drawable.expiring_icon
     }
+
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val expiry = try {
+        LocalDate.parse(item.estimatedExpiryDate, formatter)
+    } catch (e: Exception) {
+        null
+    }
+    val today = LocalDate.of(2025, 4, 1) // fake today
+    val daysLeft = expiry?.let {
+        val days = ChronoUnit.DAYS.between(today, it)
+        when {
+            days < 0 -> "Expired"
+            days == 0L -> "Expires today"
+            days == 1L -> "1 day"
+            else -> "$days days"
+        }
+    } ?: "Unknown"
 
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -231,7 +263,7 @@ fun InventoryItemCard(
             }
 
             Text(
-                text = "2 days", // You can calculate days left here
+                text = daysLeft,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold
             )
