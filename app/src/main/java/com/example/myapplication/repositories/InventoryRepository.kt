@@ -79,7 +79,7 @@ class InventoryRepository {
         return formatter.format(calendar.time)
     }
 
-    // 🔹 Delete an inventory item
+    // 🔹 Delete an inventory item by id
     suspend fun deleteItem(itemId: String): Boolean {
         return try {
             inventoryCollection.document(itemId).delete().await()
@@ -87,6 +87,24 @@ class InventoryRepository {
             true
         } catch (e: Exception) {
             Log.e("Firestore", "Error deleting item: $itemId", e)
+            false
+        }
+    }
+
+    // 🔹 Delete an inventory item by name
+    suspend fun deleteName(itemName: String): Boolean {
+        return try {
+            val snapshot = inventoryCollection.whereEqualTo("name", itemName).get().await()
+            for (document in snapshot.documents) {
+                if (document.getString("name") == itemName) {
+                    inventoryCollection.document(document.id).delete().await()
+                    break
+                }
+            }
+            Log.d("Firestore", "Items with name $itemName deleted")
+            true
+        } catch (e: Exception) {
+            Log.e("Firestore", "Error deleting items with name $itemName", e)
             false
         }
     }

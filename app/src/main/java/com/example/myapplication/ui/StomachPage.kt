@@ -58,11 +58,21 @@ class TelegramBot(private val token: String) {
 
     suspend fun sendMessage(text: String): String = withContext(Dispatchers.IO) {
         when {
-            text.contains("remove chicken", ignoreCase = true) -> "Successfully removed chicken from inventory."
-            text.contains("remove fish cake", ignoreCase = true) -> "Successfully removed fish cake from inventory."
-            text.contains("remove strawberry", ignoreCase = true) -> {
-                inventoryRepository.deleteItem("61dfd479-9c0c-4fb9-8569-1ca8da174f85")
-                "Successfully removed strawberry from inventory."
+            text.contains("remove Chicken", ignoreCase = true) -> {
+                inventoryRepository.deleteName("Spicy Japanese Fried Chicken")
+                "Successfully removed Chicken from inventory."
+            }
+            text.contains("remove Fish Cake", ignoreCase = true) -> {
+                inventoryRepository.deleteName("Fish Cake")
+                "Successfully removed Fish Cake from inventory."
+            }
+            text.contains("remove Strawberry", ignoreCase = true) -> {
+                inventoryRepository.deleteName("Strawberry")
+                "Successfully removed Strawberry from inventory."
+            }
+            text.contains("remove Cheese", ignoreCase = true) -> {
+                inventoryRepository.deleteName("Cheese")
+                "Successfully removed Cheese from inventory."
             }
             else -> "I'm not sure how to process that. Can you be more specific?"
         }
