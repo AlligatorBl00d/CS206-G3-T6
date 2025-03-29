@@ -25,6 +25,7 @@ import com.example.myapplication.ui.BottomNavigationBar
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
+import com.example.myapplication.data.repository.InventoryRepository
 import com.github.kotlintelegrambot.bot
 import com.github.kotlintelegrambot.dispatch
 import com.github.kotlintelegrambot.dispatcher.command
@@ -33,6 +34,8 @@ import com.github.kotlintelegrambot.entities.ChatId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+val inventoryRepository = InventoryRepository()
 
 class TelegramBot(private val token: String) {
     private val bot = bot {
@@ -56,9 +59,11 @@ class TelegramBot(private val token: String) {
     suspend fun sendMessage(text: String): String = withContext(Dispatchers.IO) {
         when {
             text.contains("remove chicken", ignoreCase = true) -> "Successfully removed chicken from inventory."
-            text.contains("i ate chicken", ignoreCase = true) -> "Successfully removed chicken from inventory."
             text.contains("remove fish cake", ignoreCase = true) -> "Successfully removed fish cake from inventory."
-            text.contains("i ate fish cake", ignoreCase = true) -> "Successfully removed fish cake from inventory."
+            text.contains("remove strawberry", ignoreCase = true) -> {
+                inventoryRepository.deleteItem("61dfd479-9c0c-4fb9-8569-1ca8da174f85")
+                "Successfully removed strawberry from inventory."
+            }
             else -> "I'm not sure how to process that. Can you be more specific?"
         }
     }
