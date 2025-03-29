@@ -341,7 +341,8 @@ fun extractItems(text: String): List<ScannedItem> {
             val lower = line.lowercase()
             val isLikelyMetadata = listOf(
                 "total", "visa", "payment", "cashier", "change", "ntuc", "mall", "thank", "saved",
-                "terminal", "transaction", "gst", "selfserv", "amount", "price", "acct", "acnt", "card"
+                "terminal", "transaction", "gst", "selfserv", "amount", "price", "acct", "acnt", "card", "approved", "signature", "required",
+                "contactless"
             ).any { keyword -> lower.contains(keyword) }
 
             val hasMaskedDigits = Regex("""x{4,}|[*]{4,}""").containsMatchIn(lower)

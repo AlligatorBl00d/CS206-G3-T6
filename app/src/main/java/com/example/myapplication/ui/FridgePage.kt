@@ -5,6 +5,8 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -24,6 +26,9 @@ import com.example.myapplication.R
 import com.example.myapplication.models.InventoryItem
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 
 // Existing FoodItem for display (internal use only)
 data class FoodItem(
@@ -31,7 +36,9 @@ data class FoodItem(
     val quantity: String,
     val daysLeft: String,
     val expiryDate: String,
-    val icon: Int
+    val icon: Int,
+    val daysLeftInt: Int? = null, // for sorting
+    val unitSize: String
 )
 
 // Convert InventoryItem to FoodItem for UI
@@ -41,18 +48,38 @@ fun InventoryItem.toDisplay(): FoodItem {
         "apple_image" -> R.drawable.apple_image
         "grapes_image" -> R.drawable.grapes_image
         "chicken_image" -> R.drawable.chicken_image
+        "fishcake_image" -> R.drawable.fishcake_image
+        "strawberry_image" -> R.drawable.strawberry_image
+        "spicyjapanesefriedchicken_image" -> R.drawable.spicyjapanesefriedchicken_image
         else -> R.drawable.expiring_icon
     }
 
-    // Optional: Replace with real calculation
-    val daysLeft = "2 days"
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val expiry = try {
+        LocalDate.parse(estimatedExpiryDate, formatter)
+    } catch (e: Exception) {
+        null
+    }
+
+    val today = LocalDate.of(2025, 4, 1) // fake today
+    val days = expiry?.let { ChronoUnit.DAYS.between(today, it).toInt() }
+
+    val daysLeftString = when {
+        days == null -> "Unknown"
+        days < 0 -> "Expired"
+        days == 0 -> "Expires today"
+        days == 1 -> "1 day left"
+        else -> "$days days left"
+    }
 
     return FoodItem(
         name = name,
         quantity = "x$quantity",
-        daysLeft = daysLeft,
+        daysLeft = daysLeftString,
         expiryDate = estimatedExpiryDate,
-        icon = icon
+        icon = icon,
+        daysLeftInt = days,
+        unitSize = unitSize
     )
 }
 
@@ -106,16 +133,20 @@ fun FridgeScreen(navController: NavController) {
             }
 
             // Inventory Items List
-            Column(
+// Inventory Items List (Scrollable)
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                inventoryItems.forEach { item ->
-                    val displayItem = item.toDisplay()
+                items(
+                    inventoryItems
+                        .map { it.toDisplay() }
+                        .sortedWith(compareBy(nullsLast()) { it.daysLeftInt })
+                ) { displayItem ->
                     FoodItemRow(displayItem, onDelete = {
-                        db.collection("inventoryItems").document(item.id).delete()
-                        inventoryItems.remove(item)
+                        db.collection("inventoryItems").document(displayItem.name).delete()
+                        inventoryItems.removeIf { it.name == displayItem.name }
                     })
                 }
             }
@@ -166,8 +197,8 @@ fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) {
                         .padding(end = 12.dp)
                 )
                 Text(
-                    text = "${item.name} ${item.quantity}",
-                    fontSize = 18.sp,
+                    text = "${item.name} ${item.quantity}, ${item.unitSize}",
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
