@@ -118,21 +118,21 @@ fun ReceiptScannerScreen(navController: NavController) {
         }
     )
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    fun handleReceiptProcessing(
-        context: Context,
-        rawText: String,
-        viewModel: InventoryViewModel,
-        navController: NavController
-    ) {
-        val date = extractDate(rawText)
-        val items = extractItems(rawText)
-
-        // ✅ ONLY navigating to confirmation screen — no Firestore logic
-        val encodedDate = Uri.encode(date)
-        val encodedItems = Uri.encode(Gson().toJson(items))
-        navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
-    }
+//    @RequiresApi(Build.VERSION_CODES.O)
+//    fun handleReceiptProcessing(
+//        context: Context,
+//        rawText: String,
+//        viewModel: InventoryViewModel,
+//        navController: NavController
+//    ) {
+//        val date = extractDate(rawText)
+//        val items = extractItems(rawText)
+//
+//        // ✅ ONLY navigating to confirmation screen — no Firestore logic
+//        val encodedDate = Uri.encode(date)
+//        val encodedItems = Uri.encode(Gson().toJson(items))
+//        navController.navigate("confirm_receipt/$encodedDate/$encodedItems")
+//    }
 
     Scaffold(
         topBar = {
