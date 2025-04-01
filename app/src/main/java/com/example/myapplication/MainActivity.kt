@@ -1,109 +1,28 @@
-//package com.example.myapplication
-//
-//import android.os.Bundle
-//import android.util.Log
-//import androidx.activity.ComponentActivity
-//import androidx.activity.compose.setContent
-//import androidx.navigation.compose.rememberNavController
-//import com.example.myapplication.models.InventoryItem
-//import com.example.myapplication.data.repository.InventoryRepository
-//import com.example.myapplication.ui.AppNavigation
-//import com.example.myapplication.ui.theme.MyApplicationTheme
-//import kotlinx.coroutines.*
-//import kotlinx.coroutines.flow.collect
-//import androidx.work.*
-//import java.util.concurrent.TimeUnit
-//import com.example.myapplication.utils.WorkScheduler
-//import com.example.myapplication.workers.ExpiryCheckWorker
-//
-//class MainActivity : ComponentActivity() {
-//
-//    private val inventoryRepository = InventoryRepository()  // Firestore repo instance
-//
-//    override fun onCreate(savedInstanceState: Bundle?) {
-//        super.onCreate(savedInstanceState)
-//        WorkScheduler.scheduleDailyExpiryCheck(applicationContext)
-//
-//        // 🚀 Immediately run expiry check on launch
-//        val request = OneTimeWorkRequestBuilder<ExpiryCheckWorker>().build()
-//        WorkManager.getInstance(applicationContext).enqueue(request)
-////        // 🔹 Firestore Operations in Background
-////        CoroutineScope(Dispatchers.IO).launch {
-////            testFirestoreOperations()
-////        }
-//
-//        // 🔹 Jetpack Compose UI
-//        setContent {
-//            val navController = rememberNavController() // ✅ Define NavController
-//            MyApplicationTheme {
-//                AppNavigation(navController) // ✅ Use AppNavigation for navigation
-//            }
-//        }
-//    }
-//
-//    // 🔹 TEST Firestore Read/Write/Delete
-//    private suspend fun testFirestoreOperations() {
-//        try {
-//            // 1️⃣ Create a test inventory item
-//            val testItem = InventoryItem(
-//                id = "test_001",
-//                name = "Test Chicken",
-//                category = "Meat",
-//                purchaseDate = "2025-03-10",
-//                estimatedExpiryDate = "2025-03-15",
-//                quantity = 2,
-//                storageLocation = "Freezer"
-//            )
-//
-//            // 2️⃣ Add item to Firestore
-//            val addSuccess = inventoryRepository.addItem(testItem)
-//            Log.d("FirestoreTest", "✅ Add Item Success: $addSuccess")
-//
-//            if (!addSuccess) {
-//                Log.e("FirestoreTest", "❌ Failed to add item!")
-//                return
-//            }
-//
-//            // ⏳ **Increase delay to 4 seconds for Firestore sync**
-//            delay(4000)
-//
-//            // 3️⃣ Fetch all items (LOG SNAPSHOT SIZE BEFORE PARSING)
-//            val snapshot = inventoryRepository.getAllItemsSnapshot()
-//            Log.d("FirestoreTest", "📂 Firestore Snapshot Size: ${snapshot.size()}")
-//
-//            val items = snapshot.toObjects(InventoryItem::class.java)
-//            Log.d("FirestoreTest", "📦 Retrieved ${items.size} items: $items")
-//
-//            if (items.isNotEmpty()) {
-//                // 4️⃣ Delete the test item **only if found**
-//                val deleteSuccess = inventoryRepository.deleteItem("test_001")
-//                Log.d("FirestoreTest", "🗑 Delete Item Success: $deleteSuccess")
-//            } else {
-//                Log.e("FirestoreTest", "⚠️ Item not found in Firestore!")
-//            }
-//
-//        } catch (e: Exception) {
-//            Log.e("FirestoreTest", "🔥 Error in Firestore test", e)
-//        }
-//    }
-//}
 package com.example.myapplication
 import android.os.Bundle
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.runtime.snapshotFlow
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import com.example.myapplication.data.repository.InventoryRepository
 import com.example.myapplication.notifications.NotificationHelper
 import com.example.myapplication.ui.AppNavigation
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.utils.WorkScheduler
+import com.example.myapplication.utils.populateDummyFridgeData
+import com.example.myapplication.viewmodel.InventoryViewModel
+import com.example.myapplication.viewmodel.InventoryViewModelFactory
 import com.example.myapplication.workers.ExpiryCheckWorker
+import kotlinx.coroutines.flow.first
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -115,11 +34,12 @@ class MainActivity : ComponentActivity() {
         // 2. One-time check on launch for testing
         val request = OneTimeWorkRequestBuilder<ExpiryCheckWorker>().build()
         WorkManager.getInstance(applicationContext).enqueue(request)
-
         // 3. Compose UI
         setContent {
             val context = this
             val navController = rememberNavController()
+            val repository = InventoryRepository()
+            val viewModel: InventoryViewModel = viewModel(factory = InventoryViewModelFactory(repository))
 
             // ✅ Request Notification Permission (Android 13+)
             val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -139,10 +59,24 @@ class MainActivity : ComponentActivity() {
 
             // ✅ Ask for permission on launch
             LaunchedEffect(Unit) {
+
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                 }
+                // ✅ 1. Wait for Firestore to emit inventory items (even empty)
+                viewModel.inventoryItems.first { true }
 
+                // ✅ 2. CLEAR database
+                viewModel.clearInventory {
+                    // ✅ 3. THEN populate dummy data after deletion
+                    populateDummyFridgeData(viewModel, context)
+                }
+                // 2️⃣ Wait for inventory items to load (even if it's empty)
+                //snapshotFlow { viewModel.inventoryItems.value }
+//                    .first { it.isNotEmpty() }
+//                    .let {
+//                        populateDummyFridgeData(viewModel, context)
+//                    }
                 // ✅ Check if this launch came from notification
                 val route = intent.getStringExtra("navigateTo")
                 if (route == "expiringPage") {

@@ -63,6 +63,27 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
         }
     }
 
+    fun clearInventory(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            // Force refresh from Firestore first
+            fetchInventoryItems()
+
+            // Wait briefly to allow Firestore to emit (not ideal but helps in Compose startup timing)
+            kotlinx.coroutines.delay(1000)
+
+            // Now delete
+            inventoryItems.value.forEach { item ->
+                item.id?.let {
+                    Log.d("CLEAR_DB", "🗑 Deleting ${item.name} with ID: $it")
+                    repository.deleteItem(it)
+                }
+            }
+
+            // Refresh after deletion
+            fetchInventoryItems()
+            onComplete()
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun checkForExpiringItems(context: Context) {
@@ -101,6 +122,7 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
         unitSize: String,
         storageLocation: String,
         purchaseDate: String,
+        imageUrl: String,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
@@ -119,6 +141,7 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
                 unitSize = unitSize,
                 storageLocation = storageLocation,
                 purchaseDate = purchaseDate,
+                imageUrl = imageUrl,
                 estimatedExpiryDate = estimatedExpiry
             )
 
