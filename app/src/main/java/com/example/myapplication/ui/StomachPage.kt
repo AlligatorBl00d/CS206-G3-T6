@@ -90,9 +90,7 @@ fun StomachScreen(navController: NavController) {
     var messages by remember {
         mutableStateOf(
             listOf(
-                ChatMessage("Confirm x3 Carrots?", isUser = false),
-                ChatMessage("Yes", isUser = true),
-                ChatMessage("Successfully removed", isUser = false)
+                ChatMessage("Hello! What have you digested?", isUser = false),
             )
         )
     }
