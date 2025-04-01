@@ -205,22 +205,32 @@ fun InventoryItemCard(
         else -> R.drawable.expiring_icon
     }
 
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val formatterExpiry = DateTimeFormatter.ofPattern("yyyy-MM-dd") // e.g., 2025-04-04
+    val formatterPurchase = DateTimeFormatter.ofPattern("dd/MM/yy") // e.g., 23/03/25
+
     val expiry = try {
-        LocalDate.parse(item.estimatedExpiryDate, formatter)
+        LocalDate.parse(item.estimatedExpiryDate, formatterExpiry)
     } catch (e: Exception) {
         null
     }
-    val today = LocalDate.of(2025, 4, 1) // fake today
-    val daysLeft = expiry?.let {
-        val days = ChronoUnit.DAYS.between(today, it)
-        when {
-            days < 0 -> "Expired"
-            days == 0L -> "Expires today"
-            days == 1L -> "1 day"
-            else -> "$days days"
-        }
-    } ?: "Unknown"
+
+    val purchase = try {
+        LocalDate.parse(item.purchaseDate, formatterPurchase)
+    } catch (e: Exception) {
+        null
+    }
+
+    val days = if (expiry != null && purchase != null) {
+        ChronoUnit.DAYS.between(purchase, expiry).toInt()
+    } else null
+
+    val daysLeft = when {
+        days == null -> "Unknown"
+        days < 0 -> "Expired"
+        days == 0 -> "Expires today"
+        days == 1 -> "1 day"
+        else -> "$days days"
+    }
 
     Card(
         shape = RoundedCornerShape(12.dp),

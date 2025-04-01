@@ -41,6 +41,17 @@ data class FoodItem(
     val unitSize: String
 )
 
+fun parseDate(dateString: String?): LocalDate? {
+    return try {
+        dateString?.let {
+            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            LocalDate.parse(it, formatter)
+        }
+    } catch (e: Exception) {
+        null
+    }
+}
+
 // Convert InventoryItem to FoodItem for UI
 fun InventoryItem.toDisplay(): FoodItem {
     val icon = when (imageUrl) {
@@ -54,15 +65,24 @@ fun InventoryItem.toDisplay(): FoodItem {
         else -> R.drawable.expiring_icon
     }
 
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val formatterExpiry = DateTimeFormatter.ofPattern("yyyy-MM-dd")   // e.g., 2025-04-04
+    val formatterPurchase = DateTimeFormatter.ofPattern("dd/MM/yy")   // e.g., 23/03/25
+
     val expiry = try {
-        LocalDate.parse(estimatedExpiryDate, formatter)
+        LocalDate.parse(estimatedExpiryDate, formatterExpiry)
     } catch (e: Exception) {
         null
     }
 
-    val today = LocalDate.of(2025, 4, 1) // fake today
-    val days = expiry?.let { ChronoUnit.DAYS.between(today, it).toInt() }
+    val purchase = try {
+        LocalDate.parse(purchaseDate, formatterPurchase)
+    } catch (e: Exception) {
+        null
+    }
+
+    val days = if (expiry != null && purchase != null) {
+        ChronoUnit.DAYS.between(purchase, expiry).toInt()
+    } else null
 
     val daysLeftString = when {
         days == null -> "Unknown"
@@ -121,8 +141,6 @@ fun FridgeScreen(navController: NavController) {
         }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-
-            // Filter Row (static for now)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -132,8 +150,6 @@ fun FridgeScreen(navController: NavController) {
                 }
             }
 
-            // Inventory Items List
-// Inventory Items List (Scrollable)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -184,7 +200,6 @@ fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) {
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Food Icon + Name
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
@@ -203,10 +218,7 @@ fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) {
                 )
             }
 
-            // Expiry Details
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = item.daysLeft,
                     fontSize = 14.sp,
