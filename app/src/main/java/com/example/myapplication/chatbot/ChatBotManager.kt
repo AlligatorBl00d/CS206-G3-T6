@@ -22,10 +22,6 @@ class ChatBotManager(private val inventoryRepository: InventoryRepository) {
             val amountToConsume: Int = amountToConsumeStr.toIntOrNull()
                 ?: return@withContext "❌ Invalid quantity."
 
-            // From here on, amountToConsume is non-null
-            var remainingToConsume = amountToConsume  // ✅ Only declare once here
-
-
             val allMatching = inventoryRepository.getAllItemsSnapshot().documents
                 .mapNotNull { it.toObject(InventoryItem::class.java) }
                 .filter {
@@ -37,6 +33,14 @@ class ChatBotManager(private val inventoryRepository: InventoryRepository) {
                 return@withContext "❌ Item '$itemName' with unit $unit not found in inventory."
             }
 
+            // 🛑 NEW: check if total available is enough
+            val totalAvailable = allMatching.sumOf { extractNumericValue(it.unitSize) }
+            if (totalAvailable < amountToConsume) {
+                return@withContext "❌ Not enough $itemName to consume $amountToConsume$unit. Only $totalAvailable$unit available."
+            }
+
+            // ✅ Start consuming
+            var remainingToConsume = amountToConsume
             var itemsConsumed = 0
             var totalConsumed = 0
 
@@ -50,23 +54,18 @@ class ChatBotManager(private val inventoryRepository: InventoryRepository) {
                     totalConsumed += itemAmount
                     itemsConsumed++
                 } else {
-                    // Partial consumption (optional enhancement)
+                    // Partial consumption
                     val newAmount = itemAmount - remainingToConsume
                     val updatedItem = item.copy(unitSize = "${newAmount}${unit}")
-                    inventoryRepository.updateItem(updatedItem) // You must implement this
+                    inventoryRepository.updateItem(updatedItem)
                     totalConsumed += remainingToConsume
                     itemsConsumed++
                     remainingToConsume = 0
                 }
             }
 
-            return@withContext if (remainingToConsume <= 0) {
-                "✅ Consumed $totalConsumed$unit of $itemName (from $itemsConsumed item(s))."
-            } else {
-                "❌ Not enough $itemName to consume $amountToConsume$unit. Only consumed $totalConsumed$unit from $itemsConsumed item(s)."
-            }
+            return@withContext "✅ Consumed $totalConsumed$unit of $itemName (from $itemsConsumed item(s))."
         }
-
 
         // List fridge
         else if (lower.contains("list fridge")) {
@@ -83,11 +82,11 @@ class ChatBotManager(private val inventoryRepository: InventoryRepository) {
             }
         }
 
+        // Fallback
         else {
             "🤖 Sorry, I didn't understand. Try:\n• 'consume strawberry 300g'\n• 'list fridge'"
         }
     }
-
     private fun extractNumericValue(unitSize: String): Int {
         val numberRegex = Regex("(\\d+)")
         return numberRegex.find(unitSize)?.groupValues?.get(1)?.toIntOrNull() ?: 0
