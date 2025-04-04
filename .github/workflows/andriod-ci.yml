@@ -42,6 +42,14 @@ jobs:
         with:
           name: android-app
           path: app/build/outputs/apk/release/app-release.apk
+      - name: Run UI tests on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          target: google_apis
+          arch: x86_64
+          profile: pixel
+          script: ./gradlew connectedDebugAndroidTest
   deploy_firebase:
     needs: build
     runs-on: ubuntu-latest
