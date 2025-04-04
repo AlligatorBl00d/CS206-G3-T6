@@ -235,7 +235,7 @@ fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun FridgeScreenPreview() {
     val navController = rememberNavController()

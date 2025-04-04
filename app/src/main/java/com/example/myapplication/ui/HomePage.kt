@@ -235,7 +235,7 @@ fun ListItem(item: Item, navController: NavHostController) {
     }
 }
 
-@Preview(showBackground = true)
+//@Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
     val navController = rememberNavController() // ✅ Define NavController instance
