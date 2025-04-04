@@ -48,17 +48,15 @@ jobs:
         with:
           name: android-app
           path: app/build/outputs/apk/release/app-release.apk
-      
-  deploy_firebase:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
       - name: Setup Firebase CLI
         run: curl -sL https://firebase.tools | bash
 
+      - name: Set up service account
+        run: |
+          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > "${{ github.workspace }}/gcloud-key.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="${{ github.workspace }}/gcloud-key.json"
+
       - name: Deploy Firebase Functions
-        run: firebase deploy --only functions --token ${{ secrets.FIREBASE_TOKEN }}
+        run: firebase deploy --only functions
+
+  
