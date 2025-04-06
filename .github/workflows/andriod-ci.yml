@@ -44,9 +44,10 @@ jobs:
             disable-animations: true
             emulator-options: "-no-snapshot-save -no-boot-anim -camera-back none -gpu swiftshader_indirect"
             script: |
-                adb wait-for-device
-                adb shell input keyevent 82 # unlock screen
-                ./gradlew connectedDebugAndroidTest
+              adb wait-for-device
+              sleep 30  # give it extra time to be fully ready
+              adb shell input keyevent 82
+              ./gradlew connectedDebugAndroidTest
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
