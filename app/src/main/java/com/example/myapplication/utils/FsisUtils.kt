@@ -9,9 +9,6 @@ import java.io.BufferedReader
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-
-
-
 object FsisUtils {
     fun loadFsisData(context: Context): List<FsisFoodItem> {
         val jsonString = context.assets.open("clean_fsis_data.json").bufferedReader().use { it.readText() }
@@ -47,7 +44,6 @@ object FsisUtils {
         return items
     }
 
-
     fun findMatch(name: String, data: List<FsisFoodItem>): FsisFoodItem? {
         val lowerName = name.lowercase()
 
@@ -62,6 +58,7 @@ object FsisUtils {
                     item.keywords.any { it.equals(bestMatch, ignoreCase = true) }
         }
     }
+
     fun fuzzyMatch(input: String, candidates: List<String>): String? {
         return candidates.minByOrNull { candidate ->
             levenshteinDistance(input.lowercase(), candidate.lowercase())
@@ -93,8 +90,13 @@ object FsisUtils {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun estimateExpiryDate(fsisFoodItem: FsisFoodItem, storageLocation: String): String? {
-        val today = LocalDate.now()
+    fun estimateExpiryDate(fsisFoodItem: FsisFoodItem, storageLocation: String, purchaseDate: String): String? {
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yy")
+        val parsedPurchaseDate = try {
+            LocalDate.parse(purchaseDate, formatter)
+        } catch (e: Exception) {
+            return null
+        }
 
         val daysToAdd = when (storageLocation.lowercase()) {
             "fridge", "refrigerator" -> fsisFoodItem.refrigerateMax
@@ -103,7 +105,7 @@ object FsisUtils {
         }
 
         return daysToAdd?.let {
-            today.plusDays(it.toLong()).format(DateTimeFormatter.ISO_DATE)
+            parsedPurchaseDate.plusDays(it.toLong()).format(DateTimeFormatter.ISO_DATE)
         }
     }
 }

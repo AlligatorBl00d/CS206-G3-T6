@@ -131,7 +131,7 @@ class InventoryViewModel(private val repository: InventoryRepository) : ViewMode
             val match = FsisUtils.findMatch(itemName, fsisData)
 
             val estimatedExpiry = match?.let {
-                FsisUtils.estimateExpiryDate(it, storageLocation)
+                FsisUtils.estimateExpiryDate(it, storageLocation, purchaseDate)
             } ?: ""
 
             val newItem = InventoryItem(

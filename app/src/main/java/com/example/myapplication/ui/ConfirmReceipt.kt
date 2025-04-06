@@ -26,6 +26,8 @@ import com.example.myapplication.viewmodel.InventoryViewModel
 import com.example.myapplication.viewmodel.InventoryViewModelFactory
 import kotlinx.coroutines.launch
 
+// ... [imports remain unchanged]
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfirmReceiptPage(
@@ -35,11 +37,10 @@ fun ConfirmReceiptPage(
 ) {
     var itemList by remember { mutableStateOf(initialItems.toMutableList()) }
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()  // ✅ Add this
+    val coroutineScope = rememberCoroutineScope()
     val viewModel: InventoryViewModel = viewModel(
         factory = InventoryViewModelFactory(InventoryRepository())
     )
-
 
     Scaffold(
         topBar = {
@@ -59,7 +60,7 @@ fun ConfirmReceiptPage(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            Text("🗓️ Date: $date", style = MaterialTheme.typography.titleMedium)
+            Text("\uD83D\uDCC5 Date: $date", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
             LazyColumn {
@@ -111,86 +112,92 @@ fun ConfirmReceiptPage(
 
             Button(
                 onClick = {
-                    val fsisData = FsisUtils.loadFsisData(context)
+                    coroutineScope.launch {
+                        val fsisData = FsisUtils.loadFsisData(context)
 
-                    // ✅ Filter out invalid items BEFORE loop
-                    val validItems = itemList.filter { scannedItem ->
-                        val mappedName = OcrMappingUtils.applyMapping(scannedItem.name, context)
-                        !mappedName.lowercase().contains("approved") &&
-                                !mappedName.lowercase().contains("signature") &&
-                                !mappedName.lowercase().contains("contactless") &&
-                                mappedName.length >= 5
-                    }
+                        val validItems = itemList.filter { scannedItem ->
+                            val mappedName = OcrMappingUtils.applyMapping(scannedItem.name, context)
+                            !mappedName.lowercase().contains("approved") &&
+                                    !mappedName.lowercase().contains("signature") &&
+                                    !mappedName.lowercase().contains("contactless") &&
+                                    mappedName.length >= 5
+                        }
 
-                    var successCount = 0
-                    var attemptedCount = 0
+                        if (validItems.isEmpty()) {
+                            Toast.makeText(context, "No valid items to add.", Toast.LENGTH_SHORT).show()
+                            return@launch
+                        }
 
-                    if (validItems.isEmpty()) {
-                        Toast.makeText(context, "No valid items to add.", Toast.LENGTH_SHORT).show()
-                        return@Button
-                    }
+                        var successCount = 0
+                        var attemptedCount = 0
 
-                    validItems.forEach { scannedItem ->
-                        val mappedName = OcrMappingUtils.applyMapping(scannedItem.name, context)
+                        for (scannedItem in validItems) {
+                            try {
+                                val mappedName = OcrMappingUtils.applyMapping(scannedItem.name, context)
+                                val match = FsisUtils.findMatch(mappedName, fsisData)
+                                val estimatedExpiry = match?.let {
+                                    FsisUtils.estimateExpiryDate(it, "fridge", date)
+                                } ?: ""
 
-                        val match = FsisUtils.findMatch(mappedName, fsisData)
-                        val estimatedExpiry = match?.let {
-                            FsisUtils.estimateExpiryDate(it, "fridge")
-                        } ?: ""
+                                val inventoryItem = InventoryItem(
+                                    id = java.util.UUID.randomUUID().toString(),
+                                    name = mappedName,
+                                    category = "Unknown",
+                                    quantity = scannedItem.quantity,
+                                    unitSize = scannedItem.unitSize,
+                                    storageLocation = "Fridge",
+                                    purchaseDate = date,
+                                    estimatedExpiryDate = estimatedExpiry,
+                                    imageUrl = mappedName.trim().lowercase().replace(" ", "") + "_image"
+                                )
 
-                        val inventoryItem = InventoryItem(
-                            id = java.util.UUID.randomUUID().toString(),
-                            name = mappedName,
-                            category = "Unknown",
-                            quantity = scannedItem.quantity,
-                            unitSize = scannedItem.unitSize,
-                            storageLocation = "Fridge",
-                            purchaseDate = date,
-                            estimatedExpiryDate = estimatedExpiry,
-                            imageUrl = mappedName.trim().lowercase().replace(" ", "") + "_image"
-                        )
+                                viewModel.addItem(
+                                    inventoryItem,
+                                    onSuccess = {
+                                        successCount++
+                                        attemptedCount++
 
-                        viewModel.addItem(
-                            inventoryItem,
-                            onSuccess = {
-                                successCount++
-                                attemptedCount++
+                                        if (attemptedCount == validItems.size) {
+                                            NotificationHelper.sendAddSuccessNotification(context, successCount)
 
-                                if (attemptedCount == validItems.size) {
-                                    NotificationHelper.sendAddSuccessNotification(context, successCount)
+                                            // ✅ Use a coroutine to delay outside of Compose scope
+                                            coroutineScope.launch {
+                                                kotlinx.coroutines.delay(500)
+                                                navController.navigate("home") {
+                                                    popUpTo("confirm_receipt") { inclusive = true }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    onFailure = {
+                                        attemptedCount++
+                                        Toast.makeText(
+                                            context,
+                                            "❌ Failed to add ${inventoryItem.name}",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
 
-                                    // ✅ Use a coroutine to delay outside of Compose scope
-                                    coroutineScope.launch {
-                                        kotlinx.coroutines.delay(500)
-                                        navController.navigate("home") {
-                                            popUpTo("confirm_receipt") { inclusive = true }
+                                        if (attemptedCount == validItems.size) {
+                                            navController.navigate("home") {
+                                                popUpTo("confirm_receipt") { inclusive = true }
+                                            }
+                                            NotificationHelper.sendAddSuccessNotification(context, successCount)
+
                                         }
                                     }
-                                }
-                            },
-                            onFailure = {
-                                attemptedCount++
-                                Toast.makeText(
-                                    context,
-                                    "❌ Failed to add ${inventoryItem.name}",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                )
 
-                                if (attemptedCount == validItems.size) {
-                                    navController.navigate("home") {
-                                        popUpTo("confirm_receipt") { inclusive = true }
-                                    }
-                                    NotificationHelper.sendAddSuccessNotification(context, successCount)
+                                kotlinx.coroutines.delay(100)
 
-                                }
+                            } catch (e: Exception) {
+                                Log.e("ConfirmReceipt", "⚠️ Exception adding item: ${scannedItem.name}", e)
                             }
-                        )
+                        }
                     }
-                }
-                ,
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF6200EE), // Same as top bar
+                    containerColor = Color(0xFF6200EE),
                     contentColor = Color.White
                 )
             ) {

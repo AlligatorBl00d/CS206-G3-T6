@@ -9,7 +9,8 @@ data class InventoryItem(
     val quantity: Int = 0,
     val unitSize: String = "", // e.g., "230g"
     val storageLocation: String = "",
-    val imageUrl: String = ""
+    val imageUrl: String = "",
+
 ) {
     constructor() : this("", "", "", "", "", 0, "", "")
 }

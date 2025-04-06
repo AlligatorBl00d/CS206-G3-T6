@@ -231,7 +231,7 @@ fun handleReceiptProcessing(
     items.forEach { scannedItem ->
         val match = FsisUtils.findMatch(scannedItem.name, fsisData)
         val estimatedExpiry = match?.let {
-            FsisUtils.estimateExpiryDate(it, "fridge")
+            FsisUtils.estimateExpiryDate(it, "fridge", date)
         } ?: ""
 
         val inventoryItem = InventoryItem(
