@@ -77,8 +77,6 @@ jobs:
             sleep 60
             adb shell input keyevent 82
             ./gradlew connectedDebugAndroidTest
-
-
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
