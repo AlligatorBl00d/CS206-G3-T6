@@ -49,9 +49,8 @@ jobs:
             libxi6 \
             libasound2 \
             libdbus-1-3 \
-            libfontconfig1
-
-
+            libfontconfig1 \
+            libxcb-cursor0
       - name: Run UI tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
