@@ -33,7 +33,10 @@ jobs:
 
       - name: Run Unit Tests
         run: ./gradlew test
-
+      - name: Install required dependencies for emulator
+        run: |
+            sudo apt-get update
+            sudo apt-get install -y libpulse0 libnss3 libx11-6 libglu1-mesa
       - name: Run UI tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
