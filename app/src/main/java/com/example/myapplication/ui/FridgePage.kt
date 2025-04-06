@@ -185,6 +185,12 @@ fun FilterChip(text: String, selected: Boolean) {
 
 @Composable
 fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) {
+    val daysColor = when {
+        item.daysLeftInt != null && item.daysLeftInt <= 3 -> Color.Red
+        item.daysLeftInt != null && item.daysLeftInt in 4..7 -> Color(0xFFFF9800) // Orange
+        else -> Color.Black
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,7 +228,7 @@ fun FoodItemRow(item: FoodItem, onDelete: () -> Unit) {
                     text = item.daysLeft,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = daysColor // 👈 Color now dynamic
                 )
                 Text(
                     text = "Use by ${item.expiryDate}",

@@ -10,7 +10,7 @@
     fun populateDummyFridgeData(viewModel: InventoryViewModel, context: Context) {
         val dummyItems = listOf(
             Triple("Chicken", "Meat", "chicken_image"),
-            Triple("Carrot", "Vegetable", "carrot_image")
+            Triple("Carrot", "Vegetables", "carrot_image")
         )
 
         val today = "01/04/25"
