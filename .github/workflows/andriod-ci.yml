@@ -91,10 +91,13 @@ jobs:
       - name: Setup Firebase CLI
         run: curl -sL https://firebase.tools | bash
 
-      - name: Set up service account
+      - name: Authenticate with Firebase
         run: |
           echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > "${{ github.workspace }}/gcloud-key.json"
           export GOOGLE_APPLICATION_CREDENTIALS="${{ github.workspace }}/gcloud-key.json"
+          firebase login:ci --token "$(cat $GOOGLE_APPLICATION_CREDENTIALS)" || true
 
       - name: Deploy Firebase Functions
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: "${{ github.workspace }}/gcloud-key.json"
         run: firebase deploy --only functions
