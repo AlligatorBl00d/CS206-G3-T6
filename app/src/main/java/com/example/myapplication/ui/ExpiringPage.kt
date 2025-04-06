@@ -45,17 +45,23 @@ fun ExpiringPageScreen(navController: NavController) {
         db.collection("inventoryItems")
             .get()
             .addOnSuccessListener { result ->
+                val formatterExpiry = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                val formatterPurchase = DateTimeFormatter.ofPattern("dd/MM/yy")
+
                 val items = result.mapNotNull { it.toObject(InventoryItem::class.java) }
-                    .filter { it.estimatedExpiryDate.isNotEmpty() }
-                    .sortedBy {
+                    .mapNotNull {
                         try {
-                            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                            val expiry = LocalDate.parse(it.estimatedExpiryDate, formatter)
-                            expiry
+                            val expiry = LocalDate.parse(it.estimatedExpiryDate, formatterExpiry)
+                            val purchase = LocalDate.parse(it.purchaseDate, formatterPurchase)
+                            val daysLeft = ChronoUnit.DAYS.between(purchase, expiry).toInt()
+                            if (daysLeft <= 3) Pair(it, daysLeft) else null
                         } catch (e: Exception) {
-                            LocalDate.MAX
+                            null
                         }
                     }
+                    .sortedBy { it.second }  // Sort by daysLeft (ascending)
+                    .map { it.first }         // Keep only the InventoryItem
+
                 expiringItems.clear()
                 expiringItems.addAll(items)
             }
@@ -275,7 +281,8 @@ fun InventoryItemCard(
             Text(
                 text = daysLeft,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = Color.Red
             )
         }
     }

@@ -13,7 +13,7 @@
             Triple("Carrot", "Vegetables", "carrot_image")
         )
 
-        val today = "01/04/25"
+        val purchaseDate = "18/03/25"
 
         dummyItems.forEach { (name, category, imageResName) ->
             viewModel.inventoryItems.value
@@ -29,7 +29,7 @@
                 quantity = 1,
                 unitSize = "500g",
                 storageLocation = "Fridge",
-                purchaseDate = today,
+                purchaseDate = purchaseDate,
                 imageUrl = imageResName, // 🔹 Store the drawable name (not the ID)
                 onSuccess = { Log.d("DummyData", "✅ Added $name with image") },
                 onFailure = { e -> Log.e("DummyData", "❌ Failed to add $name: ${e.message}") }

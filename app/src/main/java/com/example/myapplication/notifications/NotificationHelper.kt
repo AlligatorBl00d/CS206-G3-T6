@@ -47,7 +47,7 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Alert Items are Expiring!")
-            .setContentText("Expires in $daysLeft day(s). Tap to check.")
+            .setContentText("Tap to check")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
