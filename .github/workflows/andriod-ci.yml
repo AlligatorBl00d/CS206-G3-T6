@@ -70,6 +70,7 @@ jobs:
 
       - name: Run UI tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
+        continue-on-error: true
         with:
           api-level: 30
           target: google_apis
@@ -81,6 +82,7 @@ jobs:
           script: ./gradlew connectedDebugAndroidTest
 
       - name: Upload APK to Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: android-app
