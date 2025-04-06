@@ -34,7 +34,7 @@ jobs:
       - name: Run Unit Tests
         run: ./gradlew test
 
-      - name: Install required emulator dependencies (Ubuntu 24.04 fix)
+      - name: Install required emulator dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -47,9 +47,10 @@ jobs:
             libxrender1 \
             libxcursor1 \
             libxi6 \
-            libasound2t64 \
+            libasound2 \
             libdbus-1-3 \
             libfontconfig1
+
 
       - name: Run UI tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
