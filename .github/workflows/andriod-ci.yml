@@ -24,11 +24,16 @@ jobs:
 
       - name: Setup Gradle Cache
         uses: gradle/gradle-build-action@v2
+        with:
+          cache-read-only: false
 
       - name: Grant Execute Permission to Gradlew
         run: chmod +x gradlew
 
-      - name: Build APK
+      - name: Assemble Debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Assemble Release APK
         run: ./gradlew assembleRelease
 
       - name: Run Unit Tests
@@ -62,21 +67,19 @@ jobs:
             libpangocairo-1.0-0 \
             libpango-1.0-0 \
             libgtk-3-0 || true
+
       - name: Run UI tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 30 # 31 may crash on CI without KVM/GPU
+          api-level: 30
           target: google_apis
           arch: x86_64
           profile: pixel
+          headless: true
           disable-animations: true
           emulator-options: "-no-window -no-audio -no-boot-anim -camera-back none -gpu swiftshader_indirect -accel off"
-          script: |
-            adb devices
-            adb -s emulator-5554 wait-for-device
-            sleep 120
-            adb -s emulator-5554 shell input keyevent 82
-            ./gradlew connectedDebugAndroidTest
+          script: ./gradlew connectedDebugAndroidTest
+
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
