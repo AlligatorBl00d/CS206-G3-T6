@@ -36,6 +36,11 @@ jobs:
       - name: Assemble Release APK
         run: ./gradlew assembleRelease
 
+      - name: Build APK
+        run: |
+          ./gradlew assembleRelease
+          find app/build/outputs/ -type f
+
       - name: Run Unit Tests
         run: ./gradlew test
 
