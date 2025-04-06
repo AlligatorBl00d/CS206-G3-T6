@@ -89,12 +89,20 @@ jobs:
           emulator-options: "-no-window -no-audio -no-boot-anim -camera-back none -gpu swiftshader_indirect -accel off"
           script: ./gradlew connectedDebugAndroidTest
 
-      - name: Upload APK to Artifacts
+      - name: Upload Debug APK
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: android-app
-          path: app/build/outputs/apk/release/app-release.apk
+          name: android-app-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload Release (Unsigned) APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-app-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+
 
       - name: Setup Firebase CLI
         run: curl -sL https://firebase.tools | bash
