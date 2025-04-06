@@ -50,20 +50,34 @@ jobs:
             libdbus-1-3 \
             libfontconfig1
 
+      #      - name: Run UI tests on emulator
+      #        uses: reactivecircus/android-emulator-runner@v2
+      #        with:
+      #            api-level: 31
+      #            target: google_apis
+      #            arch: x86_64
+      #            profile: pixel
+      #            disable-animations: true
+      #            emulator-options: "-no-snapshot-save -no-boot-anim -camera-back none -gpu swiftshader_indirect"
+      #            script: |
+      #              adb wait-for-device
+      #              sleep 30  # give it extra time to be fully ready
+      #              adb shell input keyevent 82
+      #              ./gradlew connectedDebugAndroidTest
       - name: Run UI tests on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-            api-level: 31
-            target: google_apis
-            arch: x86_64
-            profile: pixel
-            disable-animations: true
-            emulator-options: "-no-snapshot-save -no-boot-anim -camera-back none -gpu swiftshader_indirect"
-            script: |
-              adb wait-for-device
-              sleep 30  # give it extra time to be fully ready
-              adb shell input keyevent 82
-              ./gradlew connectedDebugAndroidTest
+          api-level: 31
+          target: google_apis
+          arch: x86_64
+          profile: pixel
+          disable-animations: true
+          emulator-options: "-no-snapshot-save -no-boot-anim -camera-back none -gpu swiftshader_indirect -accel off"
+          script: |
+            adb wait-for-device
+            sleep 60
+            adb shell input keyevent 82
+            ./gradlew connectedDebugAndroidTest
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -79,5 +93,14 @@ jobs:
 
       - name: Deploy Firebase Functions
         run: firebase deploy --only functions
+    needs:
+    with:
+    permissions:
+    name:
+    uses:
+    strategy:
+    if:
+    secrets:
+    concurrency:
 
   
