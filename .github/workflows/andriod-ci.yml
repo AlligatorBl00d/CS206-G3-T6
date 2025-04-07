@@ -103,6 +103,11 @@ jobs:
           name: android-app-release-unsigned
           path: app/build/outputs/apk/release/app-release-unsigned.apk
 
+      - name: Set up authentication for Firebase
+        run: |
+          gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+          gcloud config set project YOUR_PROJECT_ID
+          firebase deploy --only functions --token "$(gcloud auth print-access-token)"
 
       - name: Setup Firebase CLI
         run: curl -sL https://firebase.tools | bash
