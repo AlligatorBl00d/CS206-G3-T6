@@ -103,20 +103,17 @@ jobs:
           name: android-app-release-unsigned
           path: app/build/outputs/apk/release/app-release-unsigned.apk
 
-      - name: Set up authentication for Firebase
-        run: |
-            echo "${{ secrets.GCLOUD_KEY }}" > "${{ github.workspace }}/gcloud-key.json"
-            gcloud auth activate-service-account --key-file="${{ github.workspace }}/gcloud-key.json"
-            gcloud config set project cs206-3f587
-
       - name: Setup Firebase CLI
         run: curl -sL https://firebase.tools | bash
 
-      - name: Authenticate with Firebase
+      - name: Decode and write GCLOUD_KEY
         run: |
-          echo "${{ secrets.GOOGLE_APPLICATION_CREDENTIALS_JSON }}" > "${{ github.workspace }}/gcloud-key.json"
-          export GOOGLE_APPLICATION_CREDENTIALS="${{ github.workspace }}/gcloud-key.json"
-          firebase login:ci --token "$(cat $GOOGLE_APPLICATION_CREDENTIALS)" || true
+          echo "${{ secrets.GCLOUD_KEY }}" | base64 --decode > "${{ github.workspace }}/gcloud-key.json"
+      - name: Authenticate with gcloud
+        run: |
+          gcloud auth activate-service-account --key-file="${{ github.workspace }}/gcloud-key.json"
+          gcloud config set project cs206-3f587
+          firebase deploy --only functions
 
       - name: Deploy Firebase Functions
         env:
