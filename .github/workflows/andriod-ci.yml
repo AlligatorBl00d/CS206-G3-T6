@@ -106,7 +106,7 @@ jobs:
       - name: Set up authentication for Firebase
         run: |
           gcloud auth activate-service-account --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
-          gcloud config set project YOUR_PROJECT_ID
+          gcloud config set project cs206-3f587
           firebase deploy --only functions --token "$(gcloud auth print-access-token)"
 
       - name: Setup Firebase CLI
