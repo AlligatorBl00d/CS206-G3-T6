@@ -27,7 +27,7 @@ class ExpiryCheckWorker(
         try {
             val snapshot = repository.getAllItemsSnapshot()
             val items = snapshot.toObjects(InventoryItem::class.java)
-            val today = LocalDate.now()
+            val today = LocalDate.of(2025, 3, 23) // You can change this back to LocalDate.now() after testing
 
             Log.d("ExpiryCheck", "📦 Inventory Snapshot Size: ${items.size}")
             val formatter = DateTimeFormatter.ISO_DATE

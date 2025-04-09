@@ -13,7 +13,7 @@
             Triple("Carrot", "Vegetables", "carrot_image")
         )
 
-        val purchaseDate = "18/03/25"
+        val purchaseDate = "23/03/25"
 
         dummyItems.forEach { (name, category, imageResName) ->
             viewModel.inventoryItems.value
